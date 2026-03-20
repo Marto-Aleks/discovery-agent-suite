@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Discovery Agent Suite</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 24px 32px 16px;
+      border-bottom: 1px solid #21262d;
+    }
+    header h1 { font-size: 18px; font-weight: 600; color: #f0f6fc; }
+    header p  { font-size: 13px; color: #8b949e; margin-top: 4px; }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      padding: 24px 32px;
+    }
+
+    /* ── Pipeline cards ── */
+    .pipeline {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .stage-card {
+      flex: 1;
+      min-width: 160px;
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 10px;
+      padding: 16px;
+      position: relative;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+
+    .stage-card.active {
+      border-color: #388bfd;
+      box-shadow: 0 0 0 2px rgba(56,139,253,0.2);
+    }
+
+    .stage-card.passed  { border-color: #3fb950; }
+    .stage-card.failed  { border-color: #f85149; }
+    .stage-card.override { border-color: #d29922; }
+
+    .stage-num {
+      font-size: 11px;
+      color: #484f58;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+    }
+
+    .stage-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #f0f6fc;
+      margin-bottom: 4px;
+    }
+
+    .stage-desc {
+      font-size: 12px;
+      color: #8b949e;
+      line-height: 1.4;
+    }
+
+    .stage-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 10px;
+      padding: 3px 8px;
+      border-radius: 20px;
+      background: #21262d;
+      color: #484f58;
+    }
+    .stage-status.pending  { color: #484f58; }
+    .stage-status.active   { background: rgba(56,139,253,0.15); color: #388bfd; }
+    .stage-status.thinking { background: rgba(56,139,253,0.15); color: #388bfd; }
+    .stage-status.passed   { background: rgba(63,185,80,0.15);  color: #3fb950; }
+    .stage-status.failed   { background: rgba(248,81,73,0.15);  color: #f85149; }
+    .stage-status.override { background: rgba(210,153,34,0.15); color: #d29922; }
+
+    .stage-score {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #3fb950;
+    }
+
+    /* pulse animation for active */
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      display: inline-block;
+    }
+    .active .dot, .thinking .dot { animation: pulse 1.2s ease-in-out infinite; }
+
+    /* ── Bottom panel: logs + input ── */
+    .bottom {
+      display: flex;
+      gap: 16px;
+      flex: 1;
+      min-height: 320px;
+    }
+
+    .log-panel {
+      flex: 2;
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #8b949e;
+      padding: 10px 16px;
+      border-bottom: 1px solid #21262d;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .log-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 16px;
+      font-family: "SF Mono", "Fira Code", monospace;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .log-line { display: flex; gap: 10px; }
+    .log-time { color: #484f58; flex-shrink: 0; }
+    .log-text { word-break: break-word; }
+    .log-text.info    { color: #e6edf3; }
+    .log-text.success { color: #3fb950; }
+    .log-text.warn    { color: #d29922; }
+    .log-text.error   { color: #f85149; }
+    .log-text.muted   { color: #8b949e; }
+
+    /* ── Input panel ── */
+    .input-panel {
+      flex: 1;
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .input-body {
+      flex: 1;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .input-prompt {
+      font-size: 13px;
+      color: #8b949e;
+      line-height: 1.5;
+    }
+
+    .input-area {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #e6edf3;
+      font-family: inherit;
+      font-size: 13px;
+      padding: 10px 12px;
+      resize: vertical;
+      min-height: 100px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .input-area:focus { border-color: #388bfd; }
+    .input-area:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .input-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .btn {
+      padding: 7px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.2s;
+    }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary { background: #238636; color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: #2ea043; }
+    .btn-danger  { background: #da3633; color: #fff; }
+    .btn-danger:hover:not(:disabled) { background: #f85149; }
+
+    .idle-msg {
+      text-align: center;
+      color: #484f58;
+      font-size: 13px;
+      padding: 24px;
+    }
+
+    .start-btn {
+      display: block;
+      margin: 0 auto;
+      padding: 10px 28px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      background: #238636;
+      color: #fff;
+      margin-top: 16px;
+      transition: background 0.2s;
+    }
+    .start-btn:hover { background: #2ea043; }
+    .start-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* output modal */
+    .output-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .output-modal.open { display: flex; }
+    .output-box {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      max-width: 760px;
+      width: 100%;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .output-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid #21262d;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-header h3 { font-size: 14px; font-weight: 600; }
+    .output-close {
+      background: none;
+      border: none;
+      color: #8b949e;
+      font-size: 18px;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .output-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      font-size: 13px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      color: #e6edf3;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Discovery Agent Suite</h1>
+  <p>Sequential pipeline with governance gates — AI-native SDLC</p>
+</header>
+
+<main>
+  <!-- Pipeline cards -->
+  <div class="pipeline" id="pipeline">
+    <div class="idle-msg" style="width:100%">Connect to start the pipeline.</div>
+  </div>
+
+  <!-- Start button -->
+  <div style="text-align:center">
+    <button class="start-btn" id="startBtn" onclick="startPipeline()">Start Pipeline</button>
+  </div>
+
+  <!-- Bottom panels -->
+  <div class="bottom">
+    <div class="log-panel">
+      <div class="panel-title">Live Logs</div>
+      <div class="log-body" id="logBody"></div>
+    </div>
+
+    <div class="input-panel">
+      <div class="panel-title">Input</div>
+      <div class="input-body" id="inputBody">
+        <div class="idle-msg">Waiting for pipeline to start...</div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Output modal -->
+<div class="output-modal" id="outputModal">
+  <div class="output-box">
+    <div class="output-header">
+      <h3 id="outputTitle">Agent Output</h3>
+      <button class="output-close" onclick="closeOutput()">✕</button>
+    </div>
+    <div class="output-content" id="outputContent"></div>
+  </div>
+</div>
+
+<script>
+  let stages = [];
+  let outputStore = {};
+
+  // ── SSE connection ────────────────────────────────────────────────────────
+  const es = new EventSource("/events");
+
+  es.addEventListener("pipeline-init", (e) => {
+    const { stages: s } = JSON.parse(e.data);
+    stages = s;
+    renderPipeline();
+  });
+
+  es.addEventListener("agent-start", (e) => {
+    const { index } = JSON.parse(e.data);
+    setStageStatus(index, "active");
+  });
+
+  es.addEventListener("agent-thinking", (e) => {
+    const { index } = JSON.parse(e.data);
+    setStageStatus(index, "thinking");
+  });
+
+  es.addEventListener("agent-output", (e) => {
+    const { index, output } = JSON.parse(e.data);
+    outputStore[index] = output;
+    const card = document.querySelector(`[data-index="${index}"]`);
+    if (card) {
+      const viewBtn = card.querySelector(".view-btn");
+      if (!viewBtn) {
+        const btn = document.createElement("button");
+        btn.className = "btn btn-primary view-btn";
+        btn.style.cssText = "margin-top:10px; font-size:11px; padding:4px 10px;";
+        btn.textContent = "View Output";
+        btn.onclick = () => showOutput(index);
+        card.appendChild(btn);
+      }
+      setStageStatus(index, "active");
+    }
+  });
+
+  es.addEventListener("governance", (e) => {
+    const { index, passed, score } = JSON.parse(e.data);
+    const card = document.querySelector(`[data-index="${index}"]`);
+    if (card) {
+      let scoreEl = card.querySelector(".stage-score");
+      if (!scoreEl) {
+        scoreEl = document.createElement("div");
+        scoreEl.className = "stage-score";
+        card.appendChild(scoreEl);
+      }
+      scoreEl.textContent = `${score}/100`;
+      scoreEl.style.color = passed ? "#3fb950" : "#d29922";
+    }
+  });
+
+  es.addEventListener("agent-complete", (e) => {
+    const { index, passed, override } = JSON.parse(e.data);
+    if (override) setStageStatus(index, "override");
+    else if (passed)  setStageStatus(index, "passed");
+    else              setStageStatus(index, "failed");
+  });
+
+  es.addEventListener("input-request", (e) => {
+    const { prompt, type } = JSON.parse(e.data);
+    showInput(prompt, type);
+  });
+
+  es.addEventListener("override-request", (e) => {
+    const { label } = JSON.parse(e.data);
+    showInput(`Max attempts reached for "${label}". Type "override" to continue or "quit" to stop.`, "override");
+  });
+
+  es.addEventListener("pipeline-complete", (e) => {
+    const { aborted } = JSON.parse(e.data);
+    hideInput();
+    addLog(aborted ? "Pipeline aborted." : "Pipeline complete!", aborted ? "error" : "success");
+    document.getElementById("startBtn").disabled = false;
+    document.getElementById("startBtn").textContent = "Run Again";
+  });
+
+  es.addEventListener("log", (e) => {
+    const { level, text } = JSON.parse(e.data);
+    addLog(text, level);
+  });
+
+  // ── Pipeline render ───────────────────────────────────────────────────────
+  function renderPipeline() {
+    const container = document.getElementById("pipeline");
+    container.innerHTML = "";
+    stages.forEach((s, i) => {
+      const card = document.createElement("div");
+      card.className = "stage-card";
+      card.dataset.index = i;
+      card.innerHTML = `
+        <div class="stage-num">STAGE ${i + 1}</div>
+        <div class="stage-label">${s.label}</div>
+        <div class="stage-desc">${s.description}</div>
+        <div class="stage-status pending"><span class="dot"></span> Pending</div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  function setStageStatus(index, status) {
+    const card = document.querySelector(`[data-index="${index}"]`);
+    if (!card) return;
+    card.className = `stage-card ${status}`;
+    const statusEl = card.querySelector(".stage-status");
+    const labels = {
+      pending:  "Pending",
+      active:   "Running",
+      thinking: "Thinking...",
+      passed:   "Passed",
+      failed:   "Failed",
+      override: "Override",
+    };
+    statusEl.className = `stage-status ${status}`;
+    statusEl.innerHTML = `<span class="dot"></span> ${labels[status] || status}`;
+  }
+
+  // ── Logs ──────────────────────────────────────────────────────────────────
+  function addLog(text, level = "info") {
+    const body = document.getElementById("logBody");
+    const now = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    const line = document.createElement("div");
+    line.className = "log-line";
+    line.innerHTML = `<span class="log-time">${now}</span><span class="log-text ${level}">${escHtml(text)}</span>`;
+    body.appendChild(line);
+    body.scrollTop = body.scrollHeight;
+  }
+
+  // ── Input ─────────────────────────────────────────────────────────────────
+  function showInput(prompt, type) {
+    const body = document.getElementById("inputBody");
+    body.innerHTML = `
+      <div class="input-prompt">${escHtml(prompt)}</div>
+      <textarea class="input-area" id="userInput" placeholder="Type here..." rows="5"></textarea>
+      <div class="input-footer">
+        <button class="btn btn-primary" onclick="submitInput()">Submit</button>
+      </div>
+    `;
+    document.getElementById("userInput").focus();
+  }
+
+  function hideInput() {
+    const body = document.getElementById("inputBody");
+    body.innerHTML = `<div class="idle-msg">Pipeline finished.</div>`;
+  }
+
+  function submitInput() {
+    const el = document.getElementById("userInput");
+    if (!el) return;
+    const value = el.value.trim();
+    el.disabled = true;
+    fetch("/input", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ value }),
+    });
+    const body = document.getElementById("inputBody");
+    body.innerHTML = `<div class="idle-msg">Waiting for agent...</div>`;
+  }
+
+  // allow Ctrl+Enter to submit
+  document.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") submitInput();
+  });
+
+  // ── Output modal ──────────────────────────────────────────────────────────
+  function showOutput(index) {
+    document.getElementById("outputTitle").textContent = `${stages[index]?.label} — Output`;
+    document.getElementById("outputContent").textContent = outputStore[index] || "";
+    document.getElementById("outputModal").classList.add("open");
+  }
+
+  function closeOutput() {
+    document.getElementById("outputModal").classList.remove("open");
+  }
+
+  // ── Start ─────────────────────────────────────────────────────────────────
+  function startPipeline() {
+    document.getElementById("startBtn").disabled = true;
+    document.getElementById("logBody").innerHTML = "";
+    fetch("/start", { method: "POST" });
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+</script>
+</body>
+</html>

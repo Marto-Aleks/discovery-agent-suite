@@ -1,0 +1,14 @@
+{
+  "name": "discovery-agents",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "orchestrator.js",
+  "scripts": {
+    "start": "node orchestrator.js",
+    "dashboard": "node server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
+    "express": "^4.18.2"
+  }
+}
