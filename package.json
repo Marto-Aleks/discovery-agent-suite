@@ -4,7 +4,7 @@
   "type": "module",
   "main": "orchestrator.js",
   "scripts": {
-    "start": "node orchestrator.js",
+    "start": "node server.js",
     "dashboard": "node server.js"
   },
   "dependencies": {

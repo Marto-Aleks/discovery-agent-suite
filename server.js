@@ -219,7 +219,7 @@ async function runPipeline() {
 }
 
 // ── Start ─────────────────────────────────────────────────────────────────────
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`\n  Dashboard running at http://localhost:${PORT}\n`);
 });
