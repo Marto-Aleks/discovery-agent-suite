@@ -1,5 +1,7 @@
 import { getRuntimeConfig } from "./config.js";
 import { buildGovernanceFeedback, condenseOutput, createSession, formatAnthropicError, shouldDisableCondense } from "./shared.js";
+import { formatEvidenceForPrompt } from "../evidence/routing.js";
+import { runFinalPipelineGovernance } from "./governance.js";
 
 export async function runPipeline(client, pipeline, hooks = {}) {
   const runtime = getRuntimeConfig();
@@ -21,6 +23,7 @@ export async function runPipeline(client, pipeline, hooks = {}) {
   const topic = await hooks.getTopic();
   session.topic = topic || "session";
   hooks.onLog?.({ level: "info", text: `Topic set: ${session.topic}` });
+  session.evidence = hooks.getAllEvidence ? hooks.getAllEvidence() : [];
 
   if (activePipeline.length === 0) {
     hooks.onLog?.({ level: "error", text: "No pipeline stages matched PIPELINE_STAGES." });
@@ -29,11 +32,15 @@ export async function runPipeline(client, pipeline, hooks = {}) {
 
   for (let index = 0; index < activePipeline.length; index++) {
     const agent = activePipeline[index];
+    const stageEvidence = hooks.getEvidenceForAgent ? hooks.getEvidenceForAgent(agent, session) : [];
+    const evidencePrompt = formatEvidenceForPrompt(stageEvidence);
     hooks.onAgentStart?.({ index, id: agent.id, agent });
+    hooks.onAgentEvidence?.({ index, agent, evidence: stageEvidence });
 
     const conversationHistory = [];
     let attempt = 0;
     let lastOutput = null;
+    let lastGovernance = null;
     let advanced = false;
 
     while (attempt < runtime.maxAttempts) {
@@ -85,7 +92,7 @@ export async function runPipeline(client, pipeline, hooks = {}) {
         const runResult = await agent.run(
           client,
           conversationHistory,
-          { summary: session.summary },
+          { summary: session.summary, evidence: evidencePrompt },
           (chunk) => hooks.onAgentChunk?.({ index, agent, chunk })
         );
         output = runResult.text;
@@ -105,11 +112,26 @@ export async function runPipeline(client, pipeline, hooks = {}) {
 
       let governance;
       try {
-        governance = await agent.govern(client, output);
+        governance = await agent.govern(client, output, {
+          sessionSummary: session.summary,
+          evidence: stageEvidence,
+          previousHistory: session.history,
+        });
       } catch (error) {
         hooks.onLog?.({ level: "error", text: `Governance error: ${formatAnthropicError(error)}` });
-        governance = { passed: false, score: 0, issues: ["Governance check errored."], verdict: "Could not evaluate.", usage: null };
+        governance = {
+          passed: false,
+          score: 0,
+          issues: ["Governance check errored."],
+          verdict: "Could not evaluate.",
+          evidenceGrounding: "unknown",
+          alignment: "unknown",
+          assumptions: [],
+          contradictions: [],
+          usage: null,
+        };
       }
+      lastGovernance = governance;
 
       hooks.onGovernance?.({ index, agent, result: governance });
 
@@ -131,6 +153,7 @@ export async function runPipeline(client, pipeline, hooks = {}) {
           condensed,
           score: governance.score,
           passed: true,
+          governance,
         });
         hooks.onAgentCondensed?.({ index, agent, condensed });
         hooks.onAgentComplete?.({ index, agent, score: governance.score, passed: true, govUsage: governance.usage });
@@ -165,6 +188,7 @@ export async function runPipeline(client, pipeline, hooks = {}) {
           condensed,
           score: 0,
           passed: false,
+          governance: lastGovernance,
         });
         hooks.onAgentCondensed?.({ index, agent, condensed });
         hooks.onAgentComplete?.({ index, agent, score: 0, passed: false, override: true, govUsage: null });
@@ -183,6 +207,21 @@ export async function runPipeline(client, pipeline, hooks = {}) {
       text: `${entry.passed ? "✓" : "⚠"} ${entry.agent} — ${entry.score}/100`,
     });
   });
+
+  try {
+    hooks.onLog?.({ level: "info", text: "Running final pipeline governance review..." });
+    session.finalGovernance = await runFinalPipelineGovernance(client, session);
+    hooks.onPipelineGovernance?.({ result: session.finalGovernance });
+    hooks.onLog?.({
+      level: session.finalGovernance.passed ? "success" : "warn",
+      text: session.finalGovernance.passed
+        ? `✓ Final governance PASSED — Score: ${session.finalGovernance.score}/100`
+        : `✗ Final governance flagged issues — Score: ${session.finalGovernance.score}/100`,
+    });
+  } catch (error) {
+    hooks.onLog?.({ level: "error", text: `Final governance error: ${formatAnthropicError(error)}` });
+    session.finalGovernance = null;
+  }
 
   return { aborted: false, session };
 }

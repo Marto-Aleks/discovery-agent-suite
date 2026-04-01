@@ -2,13 +2,25 @@ export function buildGovernanceFeedback(result) {
   const issues = result.issues?.length
     ? result.issues.map((issue) => `- ${issue}`).join("\n")
     : "- No specific issues provided.";
+  const assumptions = result.assumptions?.length
+    ? result.assumptions.map((item) => `- ${item}`).join("\n")
+    : "- None explicitly listed.";
+  const contradictions = result.contradictions?.length
+    ? result.contradictions.map((item) => `- ${item}`).join("\n")
+    : "- None explicitly listed.";
 
   return [
     "Governance feedback for revision:",
     `Verdict: ${result.verdict || "No verdict provided."}`,
     `Score: ${result.score ?? 0}/100`,
+    `Evidence grounding: ${result.evidenceGrounding || "unknown"}`,
+    `Cross-stage alignment: ${result.alignment || "unknown"}`,
     "Issues to address:",
     issues,
+    "Assumptions to handle explicitly:",
+    assumptions,
+    "Potential contradictions to resolve:",
+    contradictions,
     "Revise the previous output to address these issues, keep the required structure, use any provided project, product, user, marketing, support, delivery, or operational data, and clearly note missing evidence where needed.",
   ].join("\n");
 }
@@ -17,6 +29,8 @@ export function createSession() {
   return {
     history: [],
     topic: "",
+    evidence: [],
+    finalGovernance: null,
     get summary() {
       return this.history
         .map((entry) => `[${entry.agent}]\n${entry.condensed || entry.output.slice(0, 600)}`)

@@ -1,5 +1,6 @@
 import { loadContext } from "../context/loader.js";
 import { loadSkill } from "../skills/loader.js";
+import { buildGovernanceContext, parseGovernanceResponse } from "../pipeline/governance.js";
 
 function getEnvInt(name, fallback) {
   const value = Number.parseInt(process.env[name] || "", 10);
@@ -26,9 +27,12 @@ export function createAgent({
     const contextBlock = context.summary
       ? `\n\nSession context so far:\n${context.summary}`
       : "";
+    const evidenceBlock = context.evidence
+      ? `\n\nRelevant evidence for this stage:\n${context.evidence}`
+      : "";
 
     const augmented = messages.map((message, index) =>
-      index === 0 ? { ...message, content: message.content + contextBlock } : message
+      index === 0 ? { ...message, content: message.content + contextBlock + evidenceBlock } : message
     );
 
     // Reload context on each call so edits to context files take effect immediately
@@ -48,28 +52,37 @@ export function createAgent({
     return { text: message.content[0].text, usage: message.usage };
   }
 
-  async function govern(client, output) {
+  async function govern(client, output, context = {}) {
     const response = await client.messages.create({
       model: governanceModel,
       max_tokens: getEnvInt("GOVERNANCE_MAX_TOKENS", governanceMaxTokens),
-      system: loadSkill(skillId).governancePrompt,
+      system: `${loadSkill(skillId).governancePrompt}
+
+Additional governance requirements:
+- If evidence exists, penalize unsupported claims and overconfident conclusions.
+- Distinguish clearly between evidence-backed facts and assumptions.
+- Check alignment with previous stage outputs when provided.
+- Flag contradictions, scope drift, or certainty inflation.
+- Include evidenceGrounding, alignment, assumptions, and contradictions in the JSON response.
+`,
       messages: [
-        { role: "user", content: `Evaluate this ${label} output:\n\n${output}` },
+        { role: "user", content: buildGovernanceContext({ label, output, ...context }) },
         { role: "assistant", content: "{" },
       ],
     });
 
     try {
-      const full = "{" + response.content[0].text;
-      const match = full.match(/\{[\s\S]*\}/);
-      const parsed = JSON.parse(match ? match[0] : full);
-      return { ...parsed, usage: response.usage };
+      return parseGovernanceResponse("{" + response.content[0].text, response.usage);
     } catch {
       return {
         passed: false,
         score: 0,
         issues: ["Governance check failed to parse."],
         verdict: "Error in governance evaluation.",
+        evidenceGrounding: "unknown",
+        alignment: "unknown",
+        assumptions: [],
+        contradictions: [],
         usage: response.usage,
       };
     }

@@ -29,6 +29,8 @@
       --amber-bg:   rgba(255,214,10,.08);
       --purple:     #bf5af2;
       --purple-bg:  rgba(191,90,242,.08);
+      --cyan:       #64d2ff;
+      --cyan-bg:    rgba(100,210,255,.10);
       --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
       --mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
     }
@@ -255,6 +257,71 @@
       border-radius: 2px;
       width: 0%;
       transition: width .7s cubic-bezier(0.16,1,0.3,1), background .4s;
+    }
+    .ev-side {
+      margin: 18px 10px 0;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .ev-side-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .ev-side-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--bright);
+    }
+    .ev-side-meta {
+      font-size: 11px;
+      color: var(--dim);
+    }
+    .ev-chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .ev-chip {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--cyan);
+      background: var(--cyan-bg);
+      border: 1px solid rgba(100,210,255,.18);
+      border-radius: 999px;
+      padding: 3px 8px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .ev-mini-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+    .ev-mini {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      background: rgba(0,0,0,.12);
+    }
+    .ev-mini-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .ev-mini-sub {
+      font-size: 11px;
+      color: var(--faint);
+      line-height: 1.5;
     }
 
     /* ── Main ── */
@@ -545,6 +612,93 @@
       margin-bottom: 6px;
     }
     .cond-body { font-size: 12px; color: var(--dim); white-space: pre-wrap; line-height: 1.7; font-family: var(--mono); }
+    .evidence-block {
+      background: var(--cyan-bg);
+      border: 1px solid rgba(100,210,255,.18);
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+    .evidence-lbl {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin-bottom: 8px;
+    }
+    .evidence-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .evidence-item {
+      border: 1px solid rgba(100,210,255,.16);
+      border-radius: 10px;
+      padding: 12px;
+      background: rgba(0,0,0,.14);
+    }
+    .evidence-item-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+    .evidence-item-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--bright);
+    }
+    .evidence-badge {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--cyan);
+      background: rgba(100,210,255,.12);
+      border-radius: 999px;
+      padding: 2px 8px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .evidence-meta {
+      font-size: 11px;
+      color: var(--faint);
+      margin-bottom: 6px;
+    }
+    .evidence-body {
+      font-size: 12px;
+      color: var(--dim);
+      line-height: 1.65;
+      white-space: pre-wrap;
+      font-family: var(--mono);
+      max-height: 140px;
+      overflow-y: auto;
+    }
+    .evidence-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .evidence-empty {
+      font-size: 12px;
+      color: var(--faint);
+      line-height: 1.7;
+    }
+    .triage-box {
+      margin-top: 12px;
+      border: 1px solid rgba(100,210,255,.16);
+      border-radius: 10px;
+      background: rgba(100,210,255,.06);
+      padding: 12px;
+    }
+    .triage-row {
+      font-size: 12px;
+      color: var(--dim);
+      line-height: 1.6;
+      margin-top: 6px;
+    }
+    .triage-row strong {
+      color: var(--bright);
+    }
 
     /* ── Input ── */
     .inp {
@@ -575,13 +729,36 @@
       line-height: 1.6;
       transition: border-color .15s, box-shadow .15s;
     }
+    .inp select {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 14px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      line-height: 1.6;
+      transition: border-color .15s, box-shadow .15s;
+    }
     .inp input[type=text] { min-height: unset; }
-    .inp textarea:focus, .inp input[type=text]:focus {
+    .inp textarea:focus, .inp input[type=text]:focus, .inp select:focus {
       outline: none;
       border-color: var(--accent);
       box-shadow: 0 0 0 3px rgba(10,132,255,.14);
     }
     .inp-row { display: flex; gap: 8px; margin-top: 14px; }
+    .inp-subgrid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin: 12px 0;
+    }
+    .inp-file {
+      margin-top: 12px;
+      font-size: 12px;
+      color: var(--dim);
+    }
 
     /* ── Thinking ── */
     .think {
@@ -790,6 +967,23 @@
     ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+    @media (max-width: 980px) {
+      #app {
+        grid-template-columns: 1fr;
+        grid-template-rows: 52px auto 1fr auto;
+        grid-template-areas: "hdr" "side" "main" "logs";
+      }
+      #side {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+      #ctx-drawer {
+        width: 100%;
+      }
+      .sum-grid, .inp-subgrid {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
@@ -843,6 +1037,16 @@
 
       </div>
     </div>
+
+    <div class="ev-side">
+      <div class="ev-side-head">
+        <div class="ev-side-title">Evidence</div>
+        <button class="hdr-btn" style="padding:4px 10px" onclick="scrollToEvidence()">Manage</button>
+      </div>
+      <div class="ev-side-meta" id="ev-side-meta">No evidence added</div>
+      <div class="ev-chip-row" id="ev-side-types"></div>
+      <div class="ev-mini-list" id="ev-side-list"></div>
+    </div>
   </aside>
 
   <main id="main">
@@ -851,6 +1055,29 @@
       <p class="tagline">Describe the problem. The pipeline runs end-to-end — problem framing to prioritised stories.</p>
       <p class="sub">Problem &rarr; Opportunity &rarr; Stories &rarr; Estimation &rarr; Prioritisation</p>
       <div style="width:100%;max-width:580px;display:flex;flex-direction:column;gap:14px">
+        <div id="evidence-anchor"></div>
+        <div class="inp fu" style="text-align:left">
+          <label>Add Evidence</label>
+          <input type="text" id="ev-title" placeholder="Evidence title, e.g. March support export" />
+          <div class="inp-subgrid">
+            <select id="ev-type"></select>
+            <select id="ev-stage"></select>
+          </div>
+          <textarea id="ev-content" rows="5" placeholder="Paste support themes, research notes, analytics summaries, incident reports, or import a file below."></textarea>
+          <div class="inp-file">
+            <input type="file" id="ev-file" accept=".txt,.md,.csv,.json" onchange="loadEvidenceFile(event)" />
+          </div>
+          <div class="inp-row">
+            <button class="btn-g" onclick="triageEvidenceInput()">Auto-label</button>
+            <button class="btn-g" onclick="addEvidence()">Add Evidence</button>
+          </div>
+          <div id="ev-feedback" class="evidence-empty" style="margin-top:8px"></div>
+          <div id="ev-triage"></div>
+        </div>
+        <div class="evidence-block fu">
+          <div class="evidence-lbl">Evidence Library</div>
+          <div id="evidence-library"></div>
+        </div>
         <textarea id="start-topic" rows="6"
           placeholder="Describe the problem that needs solving — include context, who is affected, what's broken, and what success looks like. The more specific, the better."
           style="background:var(--bg2);border:1px solid var(--border2);color:var(--text);font-family:var(--sans);font-size:14px;padding:16px;border-radius:14px;outline:none;transition:border-color .15s,box-shadow .15s;width:100%;resize:vertical;line-height:1.7"
@@ -907,6 +1134,10 @@ const S = {
   pinned: null,
   tokIn: 0,
   tokOut: 0,
+  evidence: [],
+  evidenceMeta: { types: [], stages: [] },
+  evidenceTriage: null,
+  finalGovernance: null,
 };
 
 // ── Utils ──────────────────────────────────────────────────────────────────────
@@ -914,6 +1145,10 @@ const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>
 const mk  = (t,c) => { const e=document.createElement(t); if(c)e.className=c; return e; };
 const fms = ms => { if(!ms)return ''; return ms<1000 ? ms+'ms' : ms<60000 ? (ms/1000).toFixed(1)+'s' : Math.floor(ms/60000)+'m '+(Math.floor(ms/1000)%60)+'s'; };
 const ftk = u => { if(!u)return ''; const t=(u.input_tokens||0)+(u.output_tokens||0); return t>999?(t/1000).toFixed(1)+'k':String(t); };
+const shortText = (value, len = 140) => {
+  const s = String(value || '').trim();
+  return s.length > len ? `${s.slice(0, len).trim()}…` : s;
+};
 
 // SVG icons
 const ICONS = {
@@ -938,6 +1173,7 @@ function stopTimer(i) { if (timers[i]) { clearInterval(timers[i]); delete timers
 
 // ── SSE ────────────────────────────────────────────────────────────────────────
 const sse = new EventSource('/events');
+bootstrapEvidence();
 
 sse.addEventListener('pipeline-init', e => {
   const { stages } = JSON.parse(e.data);
@@ -950,10 +1186,16 @@ sse.addEventListener('pipeline-init', e => {
 sse.addEventListener('agent-start', e => {
   const { index } = JSON.parse(e.data);
   S.activeIdx = index;
-  S.sd[index] = { ...S.sd[index], status: 'waiting', startTime: Date.now() };
+  S.sd[index] = { ...S.sd[index], status: 'waiting', startTime: Date.now(), evidence: [] };
   startTimer(index);
   refreshSI(index);
   if (S.pinned === null) renderPanel();
+});
+
+sse.addEventListener('agent-evidence', e => {
+  const { index, evidence } = JSON.parse(e.data);
+  S.sd[index] = { ...S.sd[index], evidence: evidence || [] };
+  if (S.pinned === null || S.pinned === index) renderPanel();
 });
 
 sse.addEventListener('agent-thinking', e => {
@@ -1069,9 +1311,14 @@ sse.addEventListener('override-request', e => {
 });
 
 sse.addEventListener('pipeline-complete', e => {
-  const { aborted } = JSON.parse(e.data);
-  S.status = 'complete'; S.aborted = aborted; S.input = null;
+  const { aborted, finalGovernance } = JSON.parse(e.data);
+  S.status = 'complete'; S.aborted = aborted; S.input = null; S.finalGovernance = finalGovernance || null;
   renderSidebar(); renderPanel(); updateAnalytics();
+});
+
+sse.addEventListener('pipeline-governance', e => {
+  S.finalGovernance = JSON.parse(e.data);
+  if (S.status === 'complete') renderPanel();
 });
 
 sse.addEventListener('log', e => {
@@ -1203,6 +1450,7 @@ function renderPanel() {
   panel.appendChild(hdrEl(ag.label));
   panel.appendChild(descEl(ag.description));
 
+  if (d.evidence?.length) panel.appendChild(buildEvidenceBlock(d.evidence));
   if (d.output) panel.appendChild(buildOutput(d.output, d.runUsage, idx));
 
   if (d.output && !d.governance && d.status === 'thinking') {
@@ -1246,6 +1494,7 @@ function renderPinned(panel, i) {
     <button class="btn-g" style="margin-left:auto;font-size:13px" onclick="unpin()">&larr; Back</button>`;
   panel.appendChild(hdr);
   panel.appendChild(descEl(ag.description));
+  if (d.evidence?.length) panel.appendChild(buildEvidenceBlock(d.evidence));
   if (d.output)     panel.appendChild(buildOutput(d.output, d.runUsage, i));
   if (d.governance) panel.appendChild(buildGov(d.governance, d.status));
   if (d.condensed)  panel.appendChild(buildCond(d.condensed));
@@ -1284,6 +1533,13 @@ function renderComplete(panel) {
     </div>
   `;
   panel.appendChild(summary);
+
+  if (S.finalGovernance) {
+    const fgWrap = mk('div', 'fu');
+    fgWrap.style.marginBottom = '8px';
+    fgWrap.appendChild(buildGov(S.finalGovernance, S.finalGovernance.passed ? 'passed' : 'failed', true));
+    panel.appendChild(fgWrap);
+  }
 
   // Stage cards
   const cards = mk('div', 'stage-cards fu');
@@ -1325,6 +1581,11 @@ function buildStageCard(ag, d, i) {
   if (d.output) {
     const w = mk('div'); w.style.marginBottom = '12px';
     w.appendChild(buildOutput(d.output, d.runUsage, null));
+    body.appendChild(w);
+  }
+  if (d.evidence?.length) {
+    const w = mk('div'); w.style.marginBottom = '12px';
+    w.appendChild(buildEvidenceBlock(d.evidence));
     body.appendChild(w);
   }
   if (d.governance) {
@@ -1371,11 +1632,19 @@ function buildOutput(output, runUsage, idx) {
     <div class="out-body${streamCls}"${idAttr}>${esc(output)}</div>`;
   return b;
 }
-function buildGov(gov, status) {
+function buildGov(gov, status, isFinal = false) {
   const cls = status === 'override' ? 'gv-over' : gov.passed ? 'gv-pass' : 'gv-fail';
-  const lbl = status === 'override' ? '⚠ Override' : gov.passed ? '✓ Quality Check Passed' : '✗ Quality Check Failed';
+  const lbl = isFinal
+    ? (gov.passed ? '✓ Final Pipeline Governance Passed' : '✗ Final Pipeline Governance Flagged Issues')
+    : status === 'override' ? '⚠ Override' : gov.passed ? '✓ Quality Check Passed' : '✗ Quality Check Failed';
   const b = mk('div', `gov ${cls} fu`);
   const issues = gov.issues?.length ? `<ul class="gov-issues">${gov.issues.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>` : '';
+  const assumptions = gov.assumptions?.length
+    ? `<div class="gov-verdict"><strong>Assumptions:</strong> ${esc(gov.assumptions.join('; '))}</div>`
+    : '';
+  const contradictions = gov.contradictions?.length
+    ? `<div class="gov-verdict"><strong>Contradictions:</strong> ${esc(gov.contradictions.join('; '))}</div>`
+    : '';
   const gtok = gov.usage ? `<span class="gov-score">${ftk(gov.usage)} tok</span>` : '';
   b.innerHTML = `
     <div class="gov-row">
@@ -1383,12 +1652,33 @@ function buildGov(gov, status) {
       <span class="gov-score">${gov.score}/100</span>${gtok}
     </div>
     ${gov.verdict ? `<div class="gov-verdict">${esc(gov.verdict)}</div>` : ''}
+    ${gov.evidenceGrounding ? `<div class="gov-verdict"><strong>Evidence grounding:</strong> ${esc(gov.evidenceGrounding)}</div>` : ''}
+    ${gov.alignment ? `<div class="gov-verdict"><strong>Cross-stage alignment:</strong> ${esc(gov.alignment)}</div>` : ''}
+    ${assumptions}
+    ${contradictions}
     ${issues}`;
   return b;
 }
 function buildCond(condensed) {
   const b = mk('div', 'cond fu');
   b.innerHTML = `<div class="cond-lbl">→ Passed to next stage</div><div class="cond-body">${esc(condensed)}</div>`;
+  return b;
+}
+function buildEvidenceBlock(items) {
+  const b = mk('div', 'evidence-block fu');
+  b.innerHTML = `
+    <div class="evidence-lbl">Evidence Used</div>
+    <div class="evidence-list">
+      ${items.map((item) => `
+        <div class="evidence-item">
+          <div class="evidence-item-head">
+            <span class="evidence-item-title">${esc(item.title)}</span>
+            <span class="evidence-badge">${esc(item.type)}</span>
+          </div>
+          <div class="evidence-meta">Scope: ${esc((item.stageIds || ['all']).join(', '))} · Chunks: ${item.chunks?.length || 0}</div>
+          <div class="evidence-body">${esc(shortText(item.content, 360))}</div>
+        </div>`).join('')}
+    </div>`;
   return b;
 }
 function buildInp(pending, idx, isRetry) {
@@ -1446,6 +1736,212 @@ function toSlug(text) {
   return text.toLowerCase().replace(/[^a-z0-9\s]/g,'').trim().split(/\s+/).slice(0,6).join('-');
 }
 
+async function bootstrapEvidence() {
+  await Promise.all([loadEvidenceMeta(), loadEvidence()]);
+}
+
+async function loadEvidenceMeta() {
+  const res = await fetch('/evidence-meta');
+  S.evidenceMeta = await res.json();
+  populateEvidenceSelectors();
+}
+
+async function loadEvidence() {
+  const res = await fetch('/evidence');
+  S.evidence = await res.json();
+  renderEvidenceLibrary();
+  renderEvidenceSidebar();
+}
+
+function populateEvidenceSelectors() {
+  const typeSel = document.getElementById('ev-type');
+  const stageSel = document.getElementById('ev-stage');
+  if (!typeSel || !stageSel) return;
+
+  typeSel.innerHTML = (S.evidenceMeta.types || []).map((type) =>
+    `<option value="${esc(type)}">${esc(type)}</option>`
+  ).join('');
+
+  stageSel.innerHTML = [
+    `<option value="all">All stages</option>`,
+    ...(S.evidenceMeta.stages || []).map((stage) => `<option value="${esc(stage.id)}">${esc(stage.label)}</option>`),
+  ].join('');
+}
+
+function renderEvidenceSidebar() {
+  const meta = document.getElementById('ev-side-meta');
+  const list = document.getElementById('ev-side-list');
+  const types = document.getElementById('ev-side-types');
+  if (!meta || !list || !types) return;
+
+  const count = S.evidence.length;
+  meta.textContent = count ? `${count} evidence item${count === 1 ? '' : 's'} loaded` : 'No evidence added';
+
+  const uniqTypes = [...new Set(S.evidence.map((item) => item.type))].slice(0, 5);
+  types.innerHTML = uniqTypes.map((type) => `<span class="ev-chip">${esc(type)}</span>`).join('');
+
+  list.innerHTML = count
+    ? S.evidence.slice(0, 4).map((item) => `
+      <div class="ev-mini">
+        <div class="ev-mini-title">${esc(item.title)}</div>
+        <div class="ev-mini-sub">${esc(item.type)} · ${(item.stageIds || ['all']).join(', ')}<br>${esc(shortText(item.content, 80))}</div>
+      </div>`).join('')
+    : `<div class="evidence-empty">Paste notes or import files before running the pipeline.</div>`;
+}
+
+function renderEvidenceLibrary() {
+  const root = document.getElementById('evidence-library');
+  if (!root) return;
+
+  root.innerHTML = S.evidence.length
+    ? `<div class="evidence-list">${S.evidence.map((item) => `
+      <div class="evidence-item">
+        <div class="evidence-item-head">
+          <span class="evidence-item-title">${esc(item.title)}</span>
+          <span class="evidence-badge">${esc(item.type)}</span>
+        </div>
+        <div class="evidence-meta">Scope: ${esc((item.stageIds || ['all']).join(', '))} · Chunks: ${item.chunks?.length || 0}</div>
+        <div class="evidence-body">${esc(shortText(item.content, 420))}</div>
+        <div class="evidence-actions">
+          <button class="btn-d" style="padding:8px 14px;font-size:12px" onclick="deleteEvidence('${item.id}')">Remove</button>
+        </div>
+      </div>`).join('')}</div>`
+    : `<div class="evidence-empty">No evidence yet. Add support notes, analytics summaries, research findings, or delivery constraints here before running the pipeline.</div>`;
+
+  renderEvidenceSidebar();
+}
+
+function renderEvidenceTriage() {
+  const root = document.getElementById('ev-triage');
+  if (!root) return;
+
+  if (!S.evidenceTriage) {
+    root.innerHTML = '';
+    return;
+  }
+
+  const suggestion = S.evidenceTriage;
+  root.innerHTML = `
+    <div class="triage-box">
+      <div class="evidence-lbl" style="margin-bottom:4px">Auto-label Suggestion</div>
+      <div class="triage-row"><strong>Suggested title:</strong> ${esc(suggestion.suggestedTitle)}</div>
+      <div class="triage-row"><strong>Type:</strong> ${esc(suggestion.suggestedType)} · <strong>Stages:</strong> ${esc((suggestion.suggestedStageIds || ['all']).join(', '))}</div>
+      <div class="triage-row"><strong>Confidence:</strong> ${esc(suggestion.confidence)}</div>
+      <div class="triage-row"><strong>Summary:</strong> ${esc(suggestion.summary)}</div>
+      <div class="triage-row"><strong>Why:</strong> ${esc((suggestion.reasons || []).join(' '))}</div>
+      <div class="evidence-actions">
+        <button class="btn-g" style="padding:8px 14px;font-size:12px" onclick="applyTriageSuggestion()">Use Suggestion</button>
+      </div>
+    </div>`;
+}
+
+async function addEvidence() {
+  const titleEl = document.getElementById('ev-title');
+  const typeEl = document.getElementById('ev-type');
+  const stageEl = document.getElementById('ev-stage');
+  const contentEl = document.getElementById('ev-content');
+  const feedback = document.getElementById('ev-feedback');
+
+  const payload = {
+    title: titleEl?.value || '',
+    type: typeEl?.value || 'general',
+    content: contentEl?.value || '',
+    stageIds: [stageEl?.value || 'all'],
+    triage: S.evidenceTriage,
+  };
+
+  if (!payload.content.trim()) {
+    if (feedback) feedback.textContent = 'Add some evidence content first.';
+    return;
+  }
+
+  const res = await fetch('/evidence', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    if (feedback) feedback.textContent = data.error || 'Could not save evidence.';
+    return;
+  }
+
+  titleEl.value = '';
+  contentEl.value = '';
+  document.getElementById('ev-file').value = '';
+  S.evidenceTriage = null;
+  if (typeEl) typeEl.value = 'support';
+  if (stageEl) stageEl.value = 'all';
+  if (feedback) feedback.textContent = 'Evidence added.';
+  await loadEvidence();
+  renderEvidenceTriage();
+}
+
+async function deleteEvidence(id) {
+  await fetch(`/evidence/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  await loadEvidence();
+}
+
+function loadEvidenceFile(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const titleEl = document.getElementById('ev-title');
+    const contentEl = document.getElementById('ev-content');
+    if (titleEl && !titleEl.value.trim()) titleEl.value = file.name;
+    if (contentEl) contentEl.value = String(reader.result || '');
+    S.evidenceTriage = null;
+    renderEvidenceTriage();
+  };
+  reader.readAsText(file);
+}
+
+async function triageEvidenceInput() {
+  const title = document.getElementById('ev-title')?.value || '';
+  const content = document.getElementById('ev-content')?.value || '';
+  const feedback = document.getElementById('ev-feedback');
+
+  if (!String(title || content).trim()) {
+    if (feedback) feedback.textContent = 'Add evidence content first so the triage agent has something to analyze.';
+    return;
+  }
+
+  const res = await fetch('/evidence/triage', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, content }),
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    if (feedback) feedback.textContent = data.error || 'Could not auto-label this evidence.';
+    return;
+  }
+
+  S.evidenceTriage = await res.json();
+  if (feedback) feedback.textContent = 'Auto-label suggestion ready.';
+  renderEvidenceTriage();
+}
+
+function applyTriageSuggestion() {
+  if (!S.evidenceTriage) return;
+  const typeEl = document.getElementById('ev-type');
+  const stageEl = document.getElementById('ev-stage');
+  const titleEl = document.getElementById('ev-title');
+
+  if (titleEl && !titleEl.value.trim()) titleEl.value = S.evidenceTriage.suggestedTitle || '';
+  if (typeEl) typeEl.value = S.evidenceTriage.suggestedType || 'general';
+  if (stageEl) stageEl.value = (S.evidenceTriage.suggestedStageIds || ['all'])[0] || 'all';
+}
+
+function scrollToEvidence() {
+  const anchor = document.getElementById('evidence-anchor');
+  if (!anchor) return;
+  anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 async function startPipeline() {
   const topicEl = document.getElementById('start-topic');
   const problem = topicEl?.value.trim() || '';
@@ -1456,18 +1952,20 @@ async function startPipeline() {
 
   const btn = document.getElementById('btn-start');
   if (btn) btn.disabled = true;
-  Object.assign(S, { status:'running', activeIdx:-1, pinned:null, input:null, tokIn:0, tokOut:0, stages:[], sd:[] });
+  Object.assign(S, { status:'running', activeIdx:-1, pinned:null, input:null, tokIn:0, tokOut:0, stages:[], sd:[], finalGovernance:null });
   document.getElementById('hdr-topic').textContent  = pendingTopic;
   document.getElementById('tok-count').textContent  = '0';
   document.getElementById('log-body').innerHTML     = '';
   const ap = document.getElementById('analytics-panel');
   if (ap) ap.style.display = 'none';
   renderPanel();
+  renderEvidenceLibrary();
 
   let res = await fetch('/start', { method:'POST' });
   if (res.status === 409) {
     appendLog('warn', 'Resetting stale pipeline…');
     await fetch('/reset', { method:'POST' });
+    await loadEvidence();
     res = await fetch('/start', { method:'POST' });
   }
   if (!res.ok) {

@@ -7,11 +7,15 @@ import { PIPELINE } from "./pipeline/config.js";
 import { runPipeline as executePipeline } from "./pipeline/runner.js";
 import { createAnthropicClient } from "./lib/anthropic-client.js";
 import { saveSession } from "./lib/session-save.js";
+import { createEvidenceStore } from "./evidence/store.js";
+import { selectEvidenceForAgent, EVIDENCE_TYPE_LABELS } from "./evidence/routing.js";
+import { triageEvidence } from "./evidence/triage.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
+const evidenceStore = createEvidenceStore();
 
 // ── SSE clients ───────────────────────────────────────────────────────────────
 let clients = [];
@@ -90,6 +94,7 @@ async function startPipeline() {
         emit("log", { level: "muted", text: agent.description });
       },
       onAgentThinking: ({ index }) => emit("agent-thinking", { index }),
+      onAgentEvidence: ({ index, evidence }) => emit("agent-evidence", { index, evidence }),
       onAgentChunk: ({ index, chunk }) => emit("agent-chunk", { index, chunk }),
       onAgentOutput: ({ index, output, runUsage }) => emit("agent-output", { index, output, runUsage }),
       onAgentCondensed: ({ index, condensed }) => emit("agent-condensed", { index, condensed }),
@@ -105,11 +110,17 @@ async function startPipeline() {
         if (result.issues?.length) {
           result.issues.forEach((issue) => emit("log", { level: "warn", text: `• ${issue}` }));
         }
+        if (result.contradictions?.length) {
+          result.contradictions.forEach((item) => emit("log", { level: "warn", text: `↯ ${item}` }));
+        }
       },
       onAgentComplete: ({ index, score, passed, override, govUsage }) =>
         emit("agent-complete", { index, score, passed, govUsage, ...(override ? { override } : {}) }),
       onOverrideRequest: ({ index, agent }) => emit("override-request", { index, label: agent.label }),
+      onPipelineGovernance: ({ result }) => emit("pipeline-governance", result),
       onLog: ({ level, text }) => emit("log", { level, text }),
+      getAllEvidence: () => evidenceStore.list(),
+      getEvidenceForAgent: (agent, session) => selectEvidenceForAgent(agent.id, evidenceStore.list(), session),
     });
 
     const savedPath = saveSession(result.session);
@@ -121,6 +132,7 @@ async function startPipeline() {
       aborted: result.aborted,
       summary: result.session.history.map(({ agent, score, passed }) => ({ agent, score, passed })),
       savedPath,
+      finalGovernance: result.session.finalGovernance,
     });
   } catch (err) {
     emit("log", { level: "error", text: `Pipeline error: ${err.message}` });
@@ -132,6 +144,43 @@ async function startPipeline() {
 
 // ── Context API ───────────────────────────────────────────────────────────────
 const CONTEXT_DIR = path.join(__dirname, "context");
+
+app.get("/evidence-meta", (_req, res) => {
+  res.json({
+    types: EVIDENCE_TYPE_LABELS,
+    stages: PIPELINE.map(({ id, label }) => ({ id, label })),
+  });
+});
+
+app.get("/evidence", (_req, res) => {
+  res.json(evidenceStore.list());
+});
+
+app.post("/evidence/triage", (req, res) => {
+  const { title = "", content = "" } = req.body || {};
+  if (!String(content || title).trim()) {
+    return res.status(400).json({ error: "Evidence content or title is required for triage." });
+  }
+
+  res.json(triageEvidence({ title, content }));
+});
+
+app.post("/evidence", (req, res) => {
+  try {
+    const item = evidenceStore.add(req.body || {});
+    res.status(201).json(item);
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
+app.delete("/evidence/:id", (req, res) => {
+  const removed = evidenceStore.remove(req.params.id);
+  if (!removed) {
+    return res.status(404).json({ error: "Evidence not found" });
+  }
+  res.json({ ok: true });
+});
 
 app.get("/context", (req, res) => {
   try {
