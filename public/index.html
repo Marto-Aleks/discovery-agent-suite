@@ -1,543 +1,1662 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Discovery Agent Suite</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:         #000000;
+      --bg2:        #1c1c1e;
+      --bg3:        #2c2c2e;
+      --bg4:        #3a3a3c;
+      --border:     #38383a;
+      --border2:    #48484a;
+      --text:       #e5e5ea;
+      --dim:        #8e8e93;
+      --faint:      #636366;
+      --bright:     #f5f5f7;
+      --accent:     #0a84ff;
+      --accent-bg:  rgba(10,132,255,.12);
+      --green:      #30d158;
+      --green-bg:   rgba(48,209,88,.10);
+      --red:        #ff453a;
+      --red-bg:     rgba(255,69,58,.08);
+      --amber:      #ffd60a;
+      --amber-bg:   rgba(255,214,10,.08);
+      --purple:     #bf5af2;
+      --purple-bg:  rgba(191,90,242,.08);
+      --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+      --mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+    }
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #0d1117;
-      color: #e6edf3;
-      min-height: 100vh;
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ── Layout ── */
+    #app {
+      display: grid;
+      height: 100vh;
+      grid-template-rows: 52px 1fr auto;
+      grid-template-columns: 232px 1fr;
+      grid-template-areas: "hdr hdr" "side main" "logs logs";
+    }
+
+    /* ── Header ── */
+    #hdr {
+      grid-area: hdr;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 0 24px;
+      background: rgba(28,28,30,0.9);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-bottom: 1px solid var(--border);
+      z-index: 10;
+    }
+    .hdr-logo {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--bright);
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+    }
+    .hdr-logo span { color: var(--accent); }
+    .hdr-sep { flex: 1; }
+    #hdr-topic {
+      font-size: 12px;
+      color: var(--dim);
+      max-width: 240px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-family: var(--mono);
+    }
+    #hdr-tokens { font-size: 12px; color: var(--dim); white-space: nowrap; }
+    #hdr-tokens span { color: var(--accent); font-weight: 600; }
+    .hdr-btn {
+      padding: 6px 14px;
+      background: var(--bg3);
+      border: 1px solid var(--border2);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: background .15s;
+    }
+    .hdr-btn:hover { background: var(--bg4); }
+
+    /* ── Sidebar ── */
+    #side {
+      grid-area: side;
+      background: var(--bg2);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 20px 0;
+    }
+    #side::-webkit-scrollbar { width: 3px; }
+    #side::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+    .side-lbl {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--faint);
+      padding: 0 16px 12px;
+    }
+
+    .si {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 9px 16px;
+      cursor: pointer;
+      transition: background .12s;
+      position: relative;
+    }
+    .si::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 6px;
+      bottom: 6px;
+      width: 3px;
+      border-radius: 0 3px 3px 0;
+      background: transparent;
+      transition: background .15s;
+    }
+    .si:hover { background: rgba(255,255,255,.04); }
+    .si.s-act::before  { background: var(--accent); }
+    .si.s-pass::before { background: var(--green); }
+    .si.s-fail::before { background: var(--red); }
+    .si.s-over::before { background: var(--purple); }
+    .si.s-pin  { background: rgba(255,255,255,.05); }
+
+    .si-dot {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      flex-shrink: 0;
+      background: var(--bg4);
+      color: var(--faint);
+      transition: background .2s, color .2s;
+    }
+    .si-dot svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+    .s-act  .si-dot { background: var(--accent-bg);  color: var(--accent); }
+    .s-pass .si-dot { background: var(--green-bg);   color: var(--green); }
+    .s-fail .si-dot { background: var(--red-bg);     color: var(--red); }
+    .s-over .si-dot { background: var(--purple-bg);  color: var(--purple); }
+
+    .si-info { flex: 1; min-width: 0; }
+    .si-lbl {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .si.s-pass .si-lbl, .si.s-act .si-lbl { color: var(--bright); }
+    .si-meta { font-size: 11px; color: var(--faint); margin-top: 1px; font-variant-numeric: tabular-nums; }
+
+    .badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 20px;
+      flex-shrink: 0;
+      letter-spacing: .02em;
+    }
+    .b-pend  { color: var(--faint);  background: var(--bg4); }
+    .b-wait  { color: var(--amber);  background: var(--amber-bg); }
+    .b-think { color: var(--accent); background: var(--accent-bg); animation: pulse 1.4s infinite; }
+    .b-pass  { color: var(--green);  background: var(--green-bg); }
+    .b-fail  { color: var(--red);    background: var(--red-bg); }
+    .b-over  { color: var(--purple); background: var(--purple-bg); }
+
+    /* ── Sidebar Analytics ── */
+    .side-sep {
+      height: 1px;
+      background: var(--border);
+      margin: 16px 0 18px;
+    }
+    .an-card {
+      margin: 0 10px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 14px 16px;
       display: flex;
       flex-direction: column;
+      gap: 16px;
+    }
+    .an-row { display: flex; flex-direction: column; gap: 4px; }
+    .an-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--faint);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .an-label svg { width: 10px; height: 10px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+    .an-value {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--bright);
+      line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+      transition: color .4s;
+    }
+    .an-value.c-accent { color: var(--accent); }
+    .an-value.c-green  { color: var(--green);  }
+    .an-value.c-amber  { color: var(--amber);  }
+    .an-value.c-red    { color: var(--red);    }
+    .an-sub {
+      font-size: 10px;
+      color: var(--faint);
+      margin-top: 1px;
+      font-variant-numeric: tabular-nums;
+    }
+    .an-bar-track {
+      height: 3px;
+      background: var(--border2);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 5px;
+    }
+    .an-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      width: 0%;
+      transition: width .7s cubic-bezier(0.16,1,0.3,1), background .4s;
     }
 
-    header {
-      padding: 24px 32px 16px;
-      border-bottom: 1px solid #21262d;
-    }
-    header h1 { font-size: 18px; font-weight: 600; color: #f0f6fc; }
-    header p  { font-size: 13px; color: #8b949e; margin-top: 4px; }
-
-    main {
-      flex: 1;
+    /* ── Main ── */
+    #main {
+      grid-area: main;
+      overflow-y: auto;
+      padding: 36px 40px;
       display: flex;
       flex-direction: column;
       gap: 24px;
-      padding: 24px 32px;
     }
+    #main::-webkit-scrollbar { width: 4px; }
+    #main::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
-    /* ── Pipeline cards ── */
-    .pipeline {
+    /* ── Pipeline Track ── */
+    .pipe-wrap {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 32px 24px;
+    }
+    .pipe-track {
       display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .stage-card {
-      flex: 1;
-      min-width: 160px;
-      background: #161b22;
-      border: 1px solid #21262d;
-      border-radius: 10px;
-      padding: 16px;
-      position: relative;
-      transition: border-color 0.3s, box-shadow 0.3s;
-    }
-
-    .stage-card.active {
-      border-color: #388bfd;
-      box-shadow: 0 0 0 2px rgba(56,139,253,0.2);
-    }
-
-    .stage-card.passed  { border-color: #3fb950; }
-    .stage-card.failed  { border-color: #f85149; }
-    .stage-card.override { border-color: #d29922; }
-
-    .stage-num {
-      font-size: 11px;
-      color: #484f58;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-      margin-bottom: 6px;
-    }
-
-    .stage-label {
-      font-size: 14px;
-      font-weight: 600;
-      color: #f0f6fc;
-      margin-bottom: 4px;
-    }
-
-    .stage-desc {
-      font-size: 12px;
-      color: #8b949e;
-      line-height: 1.4;
-    }
-
-    .stage-status {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 11px;
-      font-weight: 600;
-      margin-top: 10px;
-      padding: 3px 8px;
-      border-radius: 20px;
-      background: #21262d;
-      color: #484f58;
-    }
-    .stage-status.pending  { color: #484f58; }
-    .stage-status.active   { background: rgba(56,139,253,0.15); color: #388bfd; }
-    .stage-status.thinking { background: rgba(56,139,253,0.15); color: #388bfd; }
-    .stage-status.passed   { background: rgba(63,185,80,0.15);  color: #3fb950; }
-    .stage-status.failed   { background: rgba(248,81,73,0.15);  color: #f85149; }
-    .stage-status.override { background: rgba(210,153,34,0.15); color: #d29922; }
-
-    .stage-score {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      font-size: 12px;
-      font-weight: 700;
-      color: #3fb950;
-    }
-
-    /* pulse animation for active */
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
-    }
-    .dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: currentColor;
-      display: inline-block;
-    }
-    .active .dot, .thinking .dot { animation: pulse 1.2s ease-in-out infinite; }
-
-    /* ── Bottom panel: logs + input ── */
-    .bottom {
-      display: flex;
-      gap: 16px;
-      flex: 1;
-      min-height: 320px;
-    }
-
-    .log-panel {
-      flex: 2;
-      background: #161b22;
-      border: 1px solid #21262d;
-      border-radius: 10px;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    .panel-title {
-      font-size: 12px;
-      font-weight: 600;
-      color: #8b949e;
-      padding: 10px 16px;
-      border-bottom: 1px solid #21262d;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-    }
-
-    .log-body {
-      flex: 1;
-      overflow-y: auto;
-      padding: 12px 16px;
-      font-family: "SF Mono", "Fira Code", monospace;
-      font-size: 12px;
-      line-height: 1.6;
-    }
-
-    .log-line { display: flex; gap: 10px; }
-    .log-time { color: #484f58; flex-shrink: 0; }
-    .log-text { word-break: break-word; }
-    .log-text.info    { color: #e6edf3; }
-    .log-text.success { color: #3fb950; }
-    .log-text.warn    { color: #d29922; }
-    .log-text.error   { color: #f85149; }
-    .log-text.muted   { color: #8b949e; }
-
-    /* ── Input panel ── */
-    .input-panel {
-      flex: 1;
-      background: #161b22;
-      border: 1px solid #21262d;
-      border-radius: 10px;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    .input-body {
-      flex: 1;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
+      align-items: flex-start;
       justify-content: center;
     }
-
-    .input-prompt {
-      font-size: 13px;
-      color: #8b949e;
-      line-height: 1.5;
-    }
-
-    .input-area {
-      background: #0d1117;
-      border: 1px solid #30363d;
-      border-radius: 6px;
-      color: #e6edf3;
-      font-family: inherit;
-      font-size: 13px;
-      padding: 10px 12px;
-      resize: vertical;
-      min-height: 100px;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    .input-area:focus { border-color: #388bfd; }
-    .input-area:disabled { opacity: 0.4; cursor: not-allowed; }
-
-    .input-footer {
+    .pipe-node {
       display: flex;
-      justify-content: flex-end;
-      gap: 8px;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .pipe-circle {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      font-weight: 700;
+      background: var(--bg3);
+      color: var(--faint);
+      border: 2px solid var(--border2);
+      transition: all .35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+      z-index: 1;
+    }
+    .pipe-circle svg {
+      width: 22px;
+      height: 22px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .pipe-node.done .pipe-circle {
+      background: var(--green);
+      border-color: var(--green);
+      color: #000;
+      box-shadow: 0 0 0 0 rgba(48,209,88,0);
+    }
+    .pipe-node.active .pipe-circle {
+      background: var(--accent-bg);
+      border-color: var(--accent);
+      color: var(--accent);
+      animation: pipe-pulse 2.2s ease-in-out infinite;
+    }
+    .pipe-node.failed .pipe-circle {
+      background: var(--red-bg);
+      border-color: var(--red);
+      color: var(--red);
+    }
+    .pipe-node.overridden .pipe-circle {
+      background: var(--purple-bg);
+      border-color: var(--purple);
+      color: var(--purple);
+    }
+    .pipe-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--faint);
+      white-space: nowrap;
+      transition: color .3s;
+    }
+    .pipe-node.done .pipe-label     { color: var(--green); }
+    .pipe-node.active .pipe-label   { color: var(--accent); }
+    .pipe-node.failed .pipe-label   { color: var(--red); }
+    .pipe-node.overridden .pipe-label { color: var(--purple); }
+
+    .pipe-conn {
+      flex: 1;
+      height: 2px;
+      align-self: flex-start;
+      margin-top: 25px; /* center of 52px circle = 26px from top, minus 1px half of connector */
+      min-width: 20px;
+      max-width: 72px;
+      background: var(--border2);
+      border-radius: 1px;
+      overflow: hidden;
+      transition: background .4s;
+    }
+    .pipe-conn.done { background: var(--green); }
+
+    @keyframes pipe-pulse {
+      0%,100% { box-shadow: 0 0 0 5px rgba(10,132,255,.14); }
+      50%      { box-shadow: 0 0 0 11px rgba(10,132,255,.06); }
     }
 
-    .btn {
-      padding: 7px 16px;
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      border: none;
-      transition: opacity 0.2s;
-    }
-    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .btn-primary { background: #238636; color: #fff; }
-    .btn-primary:hover:not(:disabled) { background: #2ea043; }
-    .btn-danger  { background: #da3633; color: #fff; }
-    .btn-danger:hover:not(:disabled) { background: #f85149; }
-
-    .idle-msg {
+    /* ── Start screen ── */
+    #start-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100%;
+      gap: 28px;
       text-align: center;
-      color: #484f58;
-      font-size: 13px;
-      padding: 24px;
+    }
+    #start-screen h1 {
+      font-size: 52px;
+      font-weight: 700;
+      color: var(--bright);
+      line-height: 1.08;
+      letter-spacing: -0.04em;
+    }
+    #start-screen h1 em { font-style: normal; color: var(--accent); }
+    #start-screen .tagline { font-size: 16px; color: var(--dim); max-width: 420px; line-height: 1.7; font-weight: 400; }
+    #start-screen .sub { font-size: 12px; color: var(--faint); letter-spacing: .06em; text-transform: uppercase; font-weight: 600; }
+
+    /* ── Stage header ── */
+    .sp-hdr { display: flex; align-items: center; gap: 12px; }
+    .sp-hdr h2 {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--bright);
+      letter-spacing: -0.03em;
+    }
+    .sp-desc { font-size: 13px; color: var(--dim); line-height: 1.65; }
+
+    /* ── Stage cards (complete view) ── */
+    .stage-cards { display: flex; flex-direction: column; gap: 6px; }
+    .stage-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      transition: border-color .15s;
+    }
+    .stage-card:hover { border-color: var(--border2); }
+    .stage-card-hdr {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 20px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .stage-card-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .stage-card-icon svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+    .sc-pass .stage-card-icon { background: var(--green-bg);  color: var(--green); }
+    .sc-fail .stage-card-icon { background: var(--red-bg);    color: var(--red); }
+    .sc-over .stage-card-icon { background: var(--purple-bg); color: var(--purple); }
+    .stage-card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--bright);
+      flex: 1;
+      letter-spacing: -0.01em;
+    }
+    .stage-card-stats {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 12px;
+      color: var(--dim);
+    }
+    .stat-chip {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-variant-numeric: tabular-nums;
+    }
+    .stat-chip svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; flex-shrink: 0; }
+    .stage-card-chevron {
+      color: var(--faint);
+      font-size: 16px;
+      font-weight: 300;
+      transition: transform .22s cubic-bezier(0.34,1.56,0.64,1);
+      margin-left: 4px;
+      line-height: 1;
+    }
+    .stage-card.open .stage-card-chevron { transform: rotate(90deg); }
+    .stage-card-body {
+      display: none;
+      padding: 0 20px 20px;
+      border-top: 1px solid var(--border);
+      padding-top: 20px;
+    }
+    .stage-card.open .stage-card-body { display: block; }
+
+    /* ── Output block ── */
+    .out-block {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .out-hdr {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .out-hdr-lbl {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--faint);
+    }
+    .out-toks { font-size: 11px; color: var(--faint); font-family: var(--mono); }
+    .out-body {
+      padding: 16px;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.78;
+      white-space: pre-wrap;
+      max-height: 420px;
+      overflow-y: auto;
+      color: var(--text);
+    }
+    .out-body::-webkit-scrollbar { width: 3px; }
+    .out-body::-webkit-scrollbar-thumb { background: var(--border2); }
+    .out-body.streaming::after {
+      content: '▋';
+      display: inline-block;
+      color: var(--accent);
+      animation: pulse 0.9s infinite;
+      margin-left: 1px;
     }
 
-    .start-btn {
+    /* ── Governance ── */
+    .gov { border-radius: 12px; padding: 14px 16px; border: 1px solid var(--border); }
+    .gov.gv-pass { border-color: rgba(48,209,88,.28);  background: var(--green-bg); }
+    .gov.gv-fail { border-color: rgba(255,69,58,.28);  background: var(--red-bg); }
+    .gov.gv-over { border-color: rgba(191,90,242,.28); background: var(--purple-bg); }
+    .gov.gv-run  { border-color: var(--border2); }
+    .gov-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+    .gov-status { font-size: 13px; font-weight: 700; }
+    .gv-pass .gov-status { color: var(--green); }
+    .gv-fail .gov-status { color: var(--red); }
+    .gv-over .gov-status { color: var(--purple); }
+    .gv-run  .gov-status { color: var(--dim); animation: pulse 1.4s infinite; }
+    .gov-score { font-size: 12px; color: var(--dim); }
+    .gov-verdict { font-size: 13px; color: var(--text); margin-bottom: 6px; line-height: 1.55; }
+    .gov-issues { list-style: none; font-size: 12px; color: var(--dim); }
+    .gov-issues li { padding: 2px 0; }
+    .gov-issues li::before { content: "↳ "; color: var(--red); }
+
+    /* ── Condensed ── */
+    .cond {
+      background: var(--purple-bg);
+      border: 1px solid rgba(191,90,242,.2);
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+    .cond-lbl {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--purple);
+      margin-bottom: 6px;
+    }
+    .cond-body { font-size: 12px; color: var(--dim); white-space: pre-wrap; line-height: 1.7; font-family: var(--mono); }
+
+    /* ── Input ── */
+    .inp {
+      background: var(--bg2);
+      border: 1px solid var(--border2);
+      border-radius: 14px;
+      padding: 20px;
+    }
+    .inp label {
       display: block;
-      margin: 0 auto;
-      padding: 10px 28px;
-      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--dim);
+      margin-bottom: 10px;
+      letter-spacing: .02em;
+    }
+    .inp textarea, .inp input[type=text] {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 14px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      resize: vertical;
+      min-height: 96px;
+      line-height: 1.6;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .inp input[type=text] { min-height: unset; }
+    .inp textarea:focus, .inp input[type=text]:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(10,132,255,.14);
+    }
+    .inp-row { display: flex; gap: 8px; margin-top: 14px; }
+
+    /* ── Thinking ── */
+    .think {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 18px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      color: var(--accent);
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .think-dots span {
+      display: inline-block;
+      width: 6px; height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      margin-right: 4px;
+      animation: blink 1.4s infinite;
+    }
+    .think-dots span:nth-child(2) { animation-delay: .2s; }
+    .think-dots span:nth-child(3) { animation-delay: .4s; }
+
+    /* ── Override ── */
+    .ovr {
+      background: var(--red-bg);
+      border: 1px solid rgba(255,69,58,.25);
+      border-radius: 14px;
+      padding: 22px;
+    }
+    .ovr h3 { font-size: 17px; font-weight: 700; color: var(--red); margin-bottom: 8px; letter-spacing: -0.01em; }
+    .ovr p { font-size: 14px; color: var(--dim); margin-bottom: 18px; line-height: 1.65; }
+
+    /* ── Buttons ── */
+    .btn-p {
+      padding: 10px 22px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      font-family: var(--sans);
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
-      border: none;
-      background: #238636;
-      color: #fff;
-      margin-top: 16px;
-      transition: background 0.2s;
+      border-radius: 10px;
+      transition: opacity .15s, transform .1s;
+      letter-spacing: -0.01em;
     }
-    .start-btn:hover { background: #2ea043; }
-    .start-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-p:hover  { opacity: .9; }
+    .btn-p:active { transform: scale(.98); }
+    .btn-p:disabled { opacity: .35; cursor: not-allowed; }
 
-    /* output modal */
-    .output-modal {
+    .btn-g {
+      padding: 10px 22px;
+      background: var(--bg3);
+      color: var(--text);
+      border: 1px solid var(--border2);
+      font-family: var(--sans);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: 10px;
+      transition: background .15s;
+    }
+    .btn-g:hover { background: var(--bg4); }
+
+    .btn-d {
+      padding: 10px 22px;
+      background: transparent;
+      color: var(--red);
+      border: 1px solid rgba(255,69,58,.35);
+      font-family: var(--sans);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: 10px;
+      transition: background .15s;
+    }
+    .btn-d:hover { background: var(--red-bg); }
+
+    /* ── Log strip ── */
+    #logs {
+      grid-area: logs;
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      max-height: 200px;
+      min-height: 36px;
+      transition: max-height .2s ease;
+    }
+    #logs.closed { max-height: 36px; }
+    #log-hdr {
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      height: 36px;
+      cursor: pointer;
+      flex-shrink: 0;
+      gap: 8px;
+    }
+    #log-hdr .lhdr-label { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
+    #log-latest { flex: 1; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 0 12px; font-family: var(--mono); }
+    #log-tog { font-size: 11px; color: var(--faint); margin-left: auto; white-space: nowrap; }
+    #log-body { flex: 1; overflow-y: auto; padding: 4px 16px 8px; }
+    #logs.closed #log-body { display: none; }
+    .ll { font-size: 11px; line-height: 1.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: var(--mono); }
+    .l-info    { color: var(--dim); }
+    .l-success { color: var(--green); }
+    .l-warn    { color: var(--amber); }
+    .l-error   { color: var(--red); }
+    .l-muted   { color: var(--faint); }
+
+    /* ── Context drawer ── */
+    #ctx-mask {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.7);
-      z-index: 100;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
+      background: rgba(0,0,0,.72);
+      z-index: 50;
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
     }
-    .output-modal.open { display: flex; }
-    .output-box {
-      background: #161b22;
-      border: 1px solid #30363d;
-      border-radius: 12px;
-      max-width: 760px;
-      width: 100%;
-      max-height: 80vh;
+    #ctx-mask.open { display: block; }
+    #ctx-drawer {
+      position: fixed;
+      top: 0; right: 0; bottom: 0;
+      width: 560px;
+      background: var(--bg2);
+      border-left: 1px solid var(--border2);
       display: flex;
       flex-direction: column;
-      overflow: hidden;
+      z-index: 51;
+      transform: translateX(100%);
+      transition: transform .28s cubic-bezier(0.32,0.72,0,1);
     }
-    .output-header {
-      padding: 14px 20px;
-      border-bottom: 1px solid #21262d;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .output-header h3 { font-size: 14px; font-weight: 600; }
-    .output-close {
-      background: none;
+    #ctx-mask.open #ctx-drawer { transform: translateX(0); }
+    .ctx-hdr { display: flex; align-items: center; padding: 0 20px; height: 56px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .ctx-hdr h3 { font-size: 16px; font-weight: 700; color: var(--bright); flex: 1; letter-spacing: -0.02em; }
+    .ctx-close {
+      background: var(--bg3);
       border: none;
-      color: #8b949e;
-      font-size: 18px;
+      color: var(--dim);
       cursor: pointer;
-      line-height: 1;
-    }
-    .output-content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px;
       font-size: 13px;
-      line-height: 1.7;
-      white-space: pre-wrap;
-      color: #e6edf3;
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background .15s, color .15s;
     }
+    .ctx-close:hover { background: var(--bg4); color: var(--text); }
+    .ctx-note { padding: 10px 20px; font-size: 12px; color: var(--faint); background: rgba(0,0,0,.2); border-bottom: 1px solid var(--border); flex-shrink: 0; line-height: 1.65; }
+    #ctx-tabs { display: flex; overflow-x: auto; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    #ctx-tabs::-webkit-scrollbar { height: 0; }
+    .ctx-tab { padding: 10px 16px; font-size: 13px; font-weight: 500; color: var(--dim); cursor: pointer; white-space: nowrap; border-bottom: 2px solid transparent; transition: color .12s, border-color .12s; }
+    .ctx-tab:hover { color: var(--text); }
+    .ctx-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+    #ctx-body { flex: 1; display: flex; flex-direction: column; padding: 16px 20px; gap: 12px; overflow: hidden; }
+    #ctx-ta {
+      flex: 1;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 14px;
+      border-radius: 10px;
+      resize: none;
+      line-height: 1.75;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    #ctx-ta:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(10,132,255,.12); }
+    #ctx-foot { display: flex; gap: 8px; align-items: center; }
+    #ctx-status { font-size: 12px; color: var(--faint); margin-left: auto; }
+
+    /* ── Summary ── */
+    .sum-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .sum-stat {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+    }
+    .sum-stat-label { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); margin-bottom: 6px; }
+    .sum-stat-value { font-size: 22px; font-weight: 700; color: var(--bright); letter-spacing: -0.03em; }
+    .sum-stat-value.green  { color: var(--green); }
+    .sum-stat-value.red    { color: var(--red); }
+    .sum-stat-value.accent { color: var(--accent); }
+
+    /* ── Animations ── */
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.38} }
+    @keyframes blink { 0%,80%,100%{opacity:0} 40%{opacity:1} }
+    @keyframes fu { from{opacity:0;transform:translateY(7px)} to{opacity:1;transform:translateY(0)} }
+    .fu { animation: fu .24s cubic-bezier(0.16,1,0.3,1) forwards; }
+    @keyframes fade-in { from{opacity:0} to{opacity:1} }
+
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
   </style>
 </head>
 <body>
+<div id="app">
 
-<header>
-  <h1>Discovery Agent Suite</h1>
-  <p>Sequential pipeline with governance gates — AI-native SDLC</p>
-</header>
+  <header id="hdr">
+    <div class="hdr-logo">Discovery <span>Agent</span> Suite</div>
+    <div class="hdr-sep"></div>
+    <div id="hdr-topic"></div>
+    <div id="hdr-tokens">tokens <span id="tok-count">0</span></div>
+    <button class="hdr-btn" onclick="openCtx()">Context</button>
+  </header>
 
-<main>
-  <!-- Pipeline cards -->
-  <div class="pipeline" id="pipeline">
-    <div class="idle-msg" style="width:100%">Connect to start the pipeline.</div>
-  </div>
+  <aside id="side">
+    <div class="side-lbl">Pipeline</div>
+    <div id="stage-list"></div>
 
-  <!-- Start button -->
-  <div style="text-align:center">
-    <button class="start-btn" id="startBtn" onclick="startPipeline()">Start Pipeline</button>
-  </div>
+    <div id="analytics-panel" style="display:none">
+      <div class="side-sep"></div>
+      <div class="side-lbl">Analytics</div>
+      <div class="an-card">
 
-  <!-- Bottom panels -->
-  <div class="bottom">
-    <div class="log-panel">
-      <div class="panel-title">Live Logs</div>
-      <div class="log-body" id="logBody"></div>
-    </div>
+        <div class="an-row">
+          <div class="an-label">
+            <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            Cost
+          </div>
+          <div class="an-value c-accent" id="an-cost">—</div>
+          <div class="an-sub" id="an-cost-sub">awaiting tokens</div>
+        </div>
 
-    <div class="input-panel">
-      <div class="panel-title">Input</div>
-      <div class="input-body" id="inputBody">
-        <div class="idle-msg">Waiting for pipeline to start...</div>
+        <div class="an-row">
+          <div class="an-label">
+            <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+            Quality
+          </div>
+          <div class="an-value" id="an-quality">—</div>
+          <div class="an-bar-track"><div class="an-bar-fill" id="an-quality-bar"></div></div>
+          <div class="an-sub" id="an-quality-sub">avg governance score</div>
+        </div>
+
+        <div class="an-row">
+          <div class="an-label">
+            <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            Pass Rate
+          </div>
+          <div class="an-value" id="an-pass">—</div>
+          <div class="an-bar-track"><div class="an-bar-fill" id="an-pass-bar"></div></div>
+          <div class="an-sub" id="an-pass-sub">stages completed</div>
+        </div>
+
       </div>
     </div>
-  </div>
-</main>
+  </aside>
 
-<!-- Output modal -->
-<div class="output-modal" id="outputModal">
-  <div class="output-box">
-    <div class="output-header">
-      <h3 id="outputTitle">Agent Output</h3>
-      <button class="output-close" onclick="closeOutput()">✕</button>
+  <main id="main">
+    <div id="start-screen">
+      <h1>Discovery<br><em>Agent Suite</em></h1>
+      <p class="tagline">Describe the problem. The pipeline runs end-to-end — problem framing to prioritised stories.</p>
+      <p class="sub">Problem &rarr; Opportunity &rarr; Stories &rarr; Estimation &rarr; Prioritisation</p>
+      <div style="width:100%;max-width:580px;display:flex;flex-direction:column;gap:14px">
+        <textarea id="start-topic" rows="6"
+          placeholder="Describe the problem that needs solving — include context, who is affected, what's broken, and what success looks like. The more specific, the better."
+          style="background:var(--bg2);border:1px solid var(--border2);color:var(--text);font-family:var(--sans);font-size:14px;padding:16px;border-radius:14px;outline:none;transition:border-color .15s,box-shadow .15s;width:100%;resize:vertical;line-height:1.7"
+          oninput="document.getElementById('btn-start').disabled=!this.value.trim()"
+          onfocus="this.style.borderColor='var(--accent)';this.style.boxShadow='0 0 0 3px rgba(10,132,255,.14)'"
+          onblur="this.style.borderColor='var(--border2)';this.style.boxShadow='none'"
+        ></textarea>
+        <button class="btn-p" id="btn-start" disabled onclick="startPipeline()" style="align-self:flex-start;padding:12px 28px;font-size:15px">
+          Run Pipeline &rarr;
+        </button>
+      </div>
     </div>
-    <div class="output-content" id="outputContent"></div>
+    <div id="panel" style="display:none;flex-direction:column;gap:20px"></div>
+  </main>
+
+  <div id="logs" class="closed">
+    <div id="log-hdr" onclick="toggleLogs()">
+      <span class="lhdr-label">Log</span>
+      <div id="log-latest" class="l-muted"></div>
+      <span id="log-tog">▲ expand</span>
+    </div>
+    <div id="log-body"></div>
+  </div>
+</div>
+
+<!-- Context drawer -->
+<div id="ctx-mask" onclick="handleMask(event)">
+  <div id="ctx-drawer">
+    <div class="ctx-hdr">
+      <h3>Project Context</h3>
+      <button class="ctx-close" onclick="closeCtx()">✕</button>
+    </div>
+    <div class="ctx-note">Injected into each agent's system prompt. Changes apply to the next agent run — no restart needed.</div>
+    <div id="ctx-tabs"></div>
+    <div id="ctx-body">
+      <textarea id="ctx-ta" placeholder="Loading…"></textarea>
+      <div id="ctx-foot">
+        <button class="btn-p" onclick="saveCtx()">Save</button>
+        <button class="btn-g" onclick="closeCtx()">Close</button>
+        <span id="ctx-status"></span>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
-  let stages = [];
-  let outputStore = {};
+// ── State ──────────────────────────────────────────────────────────────────────
+const S = {
+  status: 'idle',
+  stages: [],
+  sd: [],
+  activeIdx: -1,
+  input: null,
+  pinned: null,
+  tokIn: 0,
+  tokOut: 0,
+};
 
-  // ── SSE connection ────────────────────────────────────────────────────────
-  const es = new EventSource("/events");
+// ── Utils ──────────────────────────────────────────────────────────────────────
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const mk  = (t,c) => { const e=document.createElement(t); if(c)e.className=c; return e; };
+const fms = ms => { if(!ms)return ''; return ms<1000 ? ms+'ms' : ms<60000 ? (ms/1000).toFixed(1)+'s' : Math.floor(ms/60000)+'m '+(Math.floor(ms/1000)%60)+'s'; };
+const ftk = u => { if(!u)return ''; const t=(u.input_tokens||0)+(u.output_tokens||0); return t>999?(t/1000).toFixed(1)+'k':String(t); };
 
-  es.addEventListener("pipeline-init", (e) => {
-    const { stages: s } = JSON.parse(e.data);
-    stages = s;
-    renderPipeline();
-  });
+// SVG icons
+const ICONS = {
+  check: `<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>`,
+  x:     `<svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`,
+  warn:  `<svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`,
+  clock: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`,
+  hash:  `<svg viewBox="0 0 24 24"><line x1="4" y1="9" x2="20" y2="9"></line><line x1="4" y1="15" x2="20" y2="15"></line><line x1="10" y1="3" x2="8" y2="21"></line><line x1="16" y1="3" x2="14" y2="21"></line></svg>`,
+};
 
-  es.addEventListener("agent-start", (e) => {
-    const { index } = JSON.parse(e.data);
-    setStageStatus(index, "active");
-  });
+// ── Live timers ────────────────────────────────────────────────────────────────
+const timers = {};
+function startTimer(i) {
+  if (timers[i]) return;
+  timers[i] = setInterval(() => {
+    const d = S.sd[i];
+    if (!d || d.endTime) { clearInterval(timers[i]); delete timers[i]; return; }
+    refreshSI(i);
+  }, 500);
+}
+function stopTimer(i) { if (timers[i]) { clearInterval(timers[i]); delete timers[i]; } }
 
-  es.addEventListener("agent-thinking", (e) => {
-    const { index } = JSON.parse(e.data);
-    setStageStatus(index, "thinking");
-  });
+// ── SSE ────────────────────────────────────────────────────────────────────────
+const sse = new EventSource('/events');
 
-  es.addEventListener("agent-output", (e) => {
-    const { index, output } = JSON.parse(e.data);
-    outputStore[index] = output;
-    const card = document.querySelector(`[data-index="${index}"]`);
-    if (card) {
-      const viewBtn = card.querySelector(".view-btn");
-      if (!viewBtn) {
-        const btn = document.createElement("button");
-        btn.className = "btn btn-primary view-btn";
-        btn.style.cssText = "margin-top:10px; font-size:11px; padding:4px 10px;";
-        btn.textContent = "View Output";
-        btn.onclick = () => showOutput(index);
-        card.appendChild(btn);
-      }
-      setStageStatus(index, "active");
-    }
-  });
+sse.addEventListener('pipeline-init', e => {
+  const { stages } = JSON.parse(e.data);
+  S.stages = stages;
+  S.sd = stages.map(() => ({ status: 'pending' }));
+  renderSidebar();
+  updateAnalytics();
+});
 
-  es.addEventListener("governance", (e) => {
-    const { index, passed, score } = JSON.parse(e.data);
-    const card = document.querySelector(`[data-index="${index}"]`);
-    if (card) {
-      let scoreEl = card.querySelector(".stage-score");
-      if (!scoreEl) {
-        scoreEl = document.createElement("div");
-        scoreEl.className = "stage-score";
-        card.appendChild(scoreEl);
-      }
-      scoreEl.textContent = `${score}/100`;
-      scoreEl.style.color = passed ? "#3fb950" : "#d29922";
-    }
-  });
+sse.addEventListener('agent-start', e => {
+  const { index } = JSON.parse(e.data);
+  S.activeIdx = index;
+  S.sd[index] = { ...S.sd[index], status: 'waiting', startTime: Date.now() };
+  startTimer(index);
+  refreshSI(index);
+  if (S.pinned === null) renderPanel();
+});
 
-  es.addEventListener("agent-complete", (e) => {
-    const { index, passed, override } = JSON.parse(e.data);
-    if (override) setStageStatus(index, "override");
-    else if (passed)  setStageStatus(index, "passed");
-    else              setStageStatus(index, "failed");
-  });
+sse.addEventListener('agent-thinking', e => {
+  const { index } = JSON.parse(e.data);
+  S.sd[index].status = 'thinking';
+  refreshSI(index);
+  if (S.pinned === null) renderPanel();
+});
 
-  es.addEventListener("input-request", (e) => {
-    const { prompt, type } = JSON.parse(e.data);
-    showInput(prompt, type);
-  });
-
-  es.addEventListener("override-request", (e) => {
-    const { label } = JSON.parse(e.data);
-    showInput(`Max attempts reached for "${label}". Type "override" to continue or "quit" to stop.`, "override");
-  });
-
-  es.addEventListener("pipeline-complete", (e) => {
-    const { aborted } = JSON.parse(e.data);
-    hideInput();
-    addLog(aborted ? "Pipeline aborted." : "Pipeline complete!", aborted ? "error" : "success");
-    document.getElementById("startBtn").disabled = false;
-    document.getElementById("startBtn").textContent = "Run Again";
-  });
-
-  es.addEventListener("log", (e) => {
-    const { level, text } = JSON.parse(e.data);
-    addLog(text, level);
-  });
-
-  // ── Pipeline render ───────────────────────────────────────────────────────
-  function renderPipeline() {
-    const container = document.getElementById("pipeline");
-    container.innerHTML = "";
-    stages.forEach((s, i) => {
-      const card = document.createElement("div");
-      card.className = "stage-card";
-      card.dataset.index = i;
-      card.innerHTML = `
-        <div class="stage-num">STAGE ${i + 1}</div>
-        <div class="stage-label">${s.label}</div>
-        <div class="stage-desc">${s.description}</div>
-        <div class="stage-status pending"><span class="dot"></span> Pending</div>
-      `;
-      container.appendChild(card);
-    });
-  }
-
-  function setStageStatus(index, status) {
-    const card = document.querySelector(`[data-index="${index}"]`);
-    if (!card) return;
-    card.className = `stage-card ${status}`;
-    const statusEl = card.querySelector(".stage-status");
-    const labels = {
-      pending:  "Pending",
-      active:   "Running",
-      thinking: "Thinking...",
-      passed:   "Passed",
-      failed:   "Failed",
-      override: "Override",
-    };
-    statusEl.className = `stage-status ${status}`;
-    statusEl.innerHTML = `<span class="dot"></span> ${labels[status] || status}`;
-  }
-
-  // ── Logs ──────────────────────────────────────────────────────────────────
-  function addLog(text, level = "info") {
-    const body = document.getElementById("logBody");
-    const now = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-    const line = document.createElement("div");
-    line.className = "log-line";
-    line.innerHTML = `<span class="log-time">${now}</span><span class="log-text ${level}">${escHtml(text)}</span>`;
-    body.appendChild(line);
+sse.addEventListener('agent-chunk', e => {
+  const { index, chunk } = JSON.parse(e.data);
+  const d = S.sd[index];
+  if (!d.output) d.output = '';
+  d.output += chunk;
+  const body = document.getElementById(`out-body-${index}`);
+  if (body) {
+    body.textContent = d.output;
     body.scrollTop = body.scrollHeight;
+  } else if (S.pinned === null) {
+    renderPanel();
+  }
+});
+
+sse.addEventListener('agent-output', e => {
+  const { index, output, runUsage } = JSON.parse(e.data);
+  S.sd[index].output = output;
+  S.sd[index].runUsage = runUsage;
+  if (runUsage) { S.tokIn += runUsage.input_tokens || 0; S.tokOut += runUsage.output_tokens || 0; updateTok(); updateAnalytics(); }
+  const body = document.getElementById(`out-body-${index}`);
+  const toks = document.getElementById(`out-toks-${index}`);
+  if (body) {
+    body.classList.remove('streaming');
+    if (toks && runUsage) toks.textContent = `↑${runUsage.input_tokens || 0} ↓${runUsage.output_tokens || 0}`;
+  } else if (S.pinned === null) {
+    renderPanel();
+  }
+});
+
+sse.addEventListener('governance', e => {
+  const { index, ...gov } = JSON.parse(e.data);
+  S.sd[index].governance = gov;
+  if (S.pinned === null) renderPanel();
+});
+
+sse.addEventListener('agent-condensed', e => {
+  const { index, condensed } = JSON.parse(e.data);
+  S.sd[index].condensed = condensed;
+  if (S.pinned === null || S.pinned === index) renderPanel();
+});
+
+sse.addEventListener('agent-complete', e => {
+  const { index, score, passed, override, govUsage } = JSON.parse(e.data);
+  const d = S.sd[index];
+  d.score = score; d.passed = passed; d.endTime = Date.now(); d.govUsage = govUsage;
+  d.status = override ? 'override' : (passed ? 'passed' : 'failed');
+  if (govUsage) { S.tokIn += govUsage.input_tokens || 0; S.tokOut += govUsage.output_tokens || 0; updateTok(); }
+  stopTimer(index);
+  refreshSI(index);
+  updateAnalytics();
+  if (S.pinned === null) renderPanel();
+});
+
+sse.addEventListener('input-request', e => {
+  const { prompt, type } = JSON.parse(e.data);
+
+  if (type === 'topic') {
+    fetch('/input', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value: pendingTopic }) });
+    pendingTopic = '';
+    return;
   }
 
-  // ── Input ─────────────────────────────────────────────────────────────────
-  function showInput(prompt, type) {
-    const body = document.getElementById("inputBody");
-    body.innerHTML = `
-      <div class="input-prompt">${escHtml(prompt)}</div>
-      <textarea class="input-area" id="userInput" placeholder="Type here..." rows="5"></textarea>
-      <div class="input-footer">
-        <button class="btn btn-primary" onclick="submitInput()">Submit</button>
-      </div>
-    `;
-    document.getElementById("userInput").focus();
+  if (type === 'agent') {
+    const idx  = S.activeIdx;
+    const d    = idx >= 0 ? S.sd[idx] : null;
+    const isRetry = d?.governance != null;
+
+    if (!isRetry) {
+      if (idx === 0 && pendingProblem) {
+        const val = pendingProblem;
+        pendingProblem = '';
+        S.sd[idx].status = 'thinking';
+        refreshSI(idx);
+        fetch('/input', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value: val }) });
+        if (S.pinned === null) renderPanel();
+        return;
+      }
+      if (idx > 0) {
+        S.input = { prompt, type, review: true };
+        S.sd[idx].status = 'waiting';
+        refreshSI(idx);
+        if (S.pinned === null) renderPanel();
+        return;
+      }
+    }
+
+    S.input = { prompt, type };
+    S.sd[idx].status = 'waiting';
+    refreshSI(idx);
+    renderPanel();
+    return;
   }
 
-  function hideInput() {
-    const body = document.getElementById("inputBody");
-    body.innerHTML = `<div class="idle-msg">Pipeline finished.</div>`;
-  }
+  S.input = { prompt, type };
+  renderPanel();
+});
 
-  function submitInput() {
-    const el = document.getElementById("userInput");
-    if (!el) return;
-    const value = el.value.trim();
-    el.disabled = true;
-    fetch("/input", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ value }),
-    });
-    const body = document.getElementById("inputBody");
-    body.innerHTML = `<div class="idle-msg">Waiting for agent...</div>`;
-  }
+sse.addEventListener('override-request', e => {
+  const { index } = JSON.parse(e.data);
+  S.sd[index].status = 'override-req';
+  S.input = { prompt: '', type: 'override' };
+  refreshSI(index);
+  if (S.pinned === null) renderPanel();
+});
 
-  // allow Ctrl+Enter to submit
-  document.addEventListener("keydown", (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") submitInput();
+sse.addEventListener('pipeline-complete', e => {
+  const { aborted } = JSON.parse(e.data);
+  S.status = 'complete'; S.aborted = aborted; S.input = null;
+  renderSidebar(); renderPanel(); updateAnalytics();
+});
+
+sse.addEventListener('log', e => {
+  const { level, text } = JSON.parse(e.data);
+  appendLog(level, text);
+});
+
+// ── Sidebar ────────────────────────────────────────────────────────────────────
+function renderSidebar() {
+  const list = document.getElementById('stage-list');
+  list.innerHTML = '';
+  S.stages.forEach((_, i) => {
+    const el = mk('div');
+    el.id = `si-${i}`;
+    el.onclick = () => pin(i);
+    list.appendChild(el);
+    refreshSI(i);
+  });
+}
+
+function refreshSI(i) {
+  const el = document.getElementById(`si-${i}`);
+  if (!el) return;
+  const s = S.stages[i];
+  const d = S.sd[i] || { status: 'pending' };
+  const elapsed = d.startTime ? (d.endTime || Date.now()) - d.startTime : 0;
+
+  const stCls = {
+    pending:'', waiting:'s-act', thinking:'s-act',
+    passed:'s-pass', failed:'s-fail', override:'s-over', 'override-req':'s-act'
+  }[d.status] || '';
+  el.className = `si ${stCls} ${S.pinned === i ? 's-pin' : ''}`;
+
+  const [bc, bt] = {
+    pending:        ['b-pend','pending'],
+    waiting:        ['b-wait','input'],
+    thinking:       ['b-think','thinking…'],
+    passed:         ['b-pass', d.score != null ? `${d.score}/100` : 'passed'],
+    failed:         ['b-fail', d.score != null ? `${d.score}/100` : 'failed'],
+    override:       ['b-over','override'],
+    'override-req': ['b-wait','override?'],
+  }[d.status] || ['b-pend','—'];
+
+  const dotHtml = (d.status === 'passed' || d.status === 'override') ? ICONS.check
+    : d.status === 'failed' ? ICONS.x
+    : (i + 1);
+
+  el.innerHTML = `
+    <div class="si-dot">${dotHtml}</div>
+    <div class="si-info">
+      <div class="si-lbl">${esc(s.label)}</div>
+      ${elapsed ? `<div class="si-meta">${fms(elapsed)}</div>` : ''}
+    </div>
+    <span class="badge ${bc}">${bt}</span>
+  `;
+}
+
+// ── Pipeline Track ─────────────────────────────────────────────────────────────
+function renderPipelineTrack() {
+  if (!S.stages.length) return null;
+  const wrap  = mk('div', 'pipe-wrap fu');
+  const track = mk('div', 'pipe-track');
+
+  S.stages.forEach((ag, i) => {
+    const d = S.sd[i] || { status: 'pending' };
+    const isDone     = d.status === 'passed' || d.status === 'override';
+    const isActive   = d.status === 'thinking' || d.status === 'waiting' || d.status === 'override-req';
+    const isFailed   = d.status === 'failed';
+    const isOverride = d.status === 'override';
+
+    const nodeCls = isDone ? (isOverride ? 'overridden' : 'done') : isActive ? 'active' : isFailed ? 'failed' : '';
+    const node   = mk('div', `pipe-node ${nodeCls}`);
+    const circle = mk('div', 'pipe-circle');
+
+    if (isDone && !isOverride) {
+      circle.innerHTML = ICONS.check;
+    } else if (isOverride) {
+      circle.innerHTML = ICONS.warn;
+    } else if (isFailed) {
+      circle.innerHTML = ICONS.x;
+    } else if (isActive) {
+      circle.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8" stroke-dasharray="4 3"></circle></svg>`;
+    } else {
+      circle.textContent = i + 1;
+    }
+
+    const label = mk('div', 'pipe-label');
+    label.textContent = ag.label;
+    node.appendChild(circle);
+    node.appendChild(label);
+    track.appendChild(node);
+
+    if (i < S.stages.length - 1) {
+      const conn = mk('div', `pipe-conn${isDone ? ' done' : ''}`);
+      track.appendChild(conn);
+    }
   });
 
-  // ── Output modal ──────────────────────────────────────────────────────────
-  function showOutput(index) {
-    document.getElementById("outputTitle").textContent = `${stages[index]?.label} — Output`;
-    document.getElementById("outputContent").textContent = outputStore[index] || "";
-    document.getElementById("outputModal").classList.add("open");
+  wrap.appendChild(track);
+  return wrap;
+}
+
+// ── Panel ──────────────────────────────────────────────────────────────────────
+function renderPanel() {
+  const startEl = document.getElementById('start-screen');
+  const panel   = document.getElementById('panel');
+
+  if (S.status === 'idle') { startEl.style.display = 'flex'; panel.style.display = 'none'; return; }
+  startEl.style.display = 'none';
+  panel.style.display = 'flex';
+  panel.innerHTML = '';
+
+  if (S.status === 'complete') { renderComplete(panel); return; }
+  if (S.pinned !== null)       { renderPinned(panel, S.pinned); return; }
+
+  // Pipeline track at top
+  const track = renderPipelineTrack();
+  if (track) panel.appendChild(track);
+
+  const idx = S.activeIdx;
+  if (idx < 0) {
+    if (S.input?.type === 'topic') renderTopicInput(panel);
+    return;
   }
 
-  function closeOutput() {
-    document.getElementById("outputModal").classList.remove("open");
+  const d  = S.sd[idx];
+  const ag = S.stages[idx];
+
+  panel.appendChild(hdrEl(ag.label));
+  panel.appendChild(descEl(ag.description));
+
+  if (d.output) panel.appendChild(buildOutput(d.output, d.runUsage, idx));
+
+  if (d.output && !d.governance && d.status === 'thinking') {
+    const g = mk('div', 'gov gv-run fu');
+    g.innerHTML = `<div class="gov-row"><span class="gov-status">Checking quality…</span></div>`;
+    panel.appendChild(g);
+  }
+  if (d.governance) panel.appendChild(buildGov(d.governance, d.status));
+  if (d.condensed && (d.status === 'passed' || d.status === 'override')) panel.appendChild(buildCond(d.condensed));
+  if (d.status === 'override-req') panel.appendChild(buildOverride(ag));
+
+  if (d.status === 'waiting' && S.input) {
+    if (S.input.review) panel.appendChild(buildContinueReview(idx));
+    else panel.appendChild(buildInp(S.input, idx, !!d.output));
   }
 
-  // ── Start ─────────────────────────────────────────────────────────────────
-  function startPipeline() {
-    document.getElementById("startBtn").disabled = true;
-    document.getElementById("logBody").innerHTML = "";
-    fetch("/start", { method: "POST" });
+  if (d.status === 'thinking' && !d.output) {
+    const t = mk('div', 'think fu');
+    t.innerHTML = `<div class="think-dots"><span></span><span></span><span></span></div><span>Generating…</span>`;
+    panel.appendChild(t);
+  }
+}
+
+function renderTopicInput(panel) {
+  const id = 'topic-inp';
+  const b = mk('div', 'inp fu');
+  b.innerHTML = `
+    <label>Session Topic</label>
+    <input type="text" id="${id}" placeholder="e.g. payment-flow-redesign" />
+    <div class="inp-row"><button class="btn-p" onclick="doSubmit('${id}')">Begin &rarr;</button></div>`;
+  panel.appendChild(b);
+  setTimeout(() => document.getElementById(id)?.focus(), 50);
+}
+
+function renderPinned(panel, i) {
+  const d  = S.sd[i];
+  const ag = S.stages[i];
+  const hdr = mk('div', 'sp-hdr fu');
+  hdr.innerHTML = `
+    <h2>${esc(ag.label)}</h2>
+    <button class="btn-g" style="margin-left:auto;font-size:13px" onclick="unpin()">&larr; Back</button>`;
+  panel.appendChild(hdr);
+  panel.appendChild(descEl(ag.description));
+  if (d.output)     panel.appendChild(buildOutput(d.output, d.runUsage, i));
+  if (d.governance) panel.appendChild(buildGov(d.governance, d.status));
+  if (d.condensed)  panel.appendChild(buildCond(d.condensed));
+}
+
+function renderComplete(panel) {
+  const track = renderPipelineTrack();
+  if (track) panel.appendChild(track);
+
+  // Stats row
+  const passed   = S.sd.filter(d => d.status === 'passed' || d.status === 'override').length;
+  const totalMs  = S.sd.reduce((a, d) => a + (d.startTime && d.endTime ? d.endTime - d.startTime : 0), 0);
+  const totalTok = S.tokIn + S.tokOut;
+
+  const summary = mk('div', 'fu');
+  summary.innerHTML = `
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap">
+      <div style="font-size:24px;font-weight:700;color:var(--${S.aborted ? 'red' : 'green'});letter-spacing:-0.03em">
+        ${S.aborted ? 'Session Ended' : 'Pipeline Complete'}
+      </div>
+      <button class="btn-p" onclick="startPipeline()" style="margin-left:auto">New Pipeline &rarr;</button>
+    </div>
+    <div class="sum-grid">
+      <div class="sum-stat">
+        <div class="sum-stat-label">Stages Passed</div>
+        <div class="sum-stat-value ${S.aborted ? 'red' : 'green'}">${passed} / ${S.stages.length}</div>
+      </div>
+      <div class="sum-stat">
+        <div class="sum-stat-label">Total Duration</div>
+        <div class="sum-stat-value accent">${fms(totalMs) || '—'}</div>
+      </div>
+      <div class="sum-stat">
+        <div class="sum-stat-label">Tokens Used</div>
+        <div class="sum-stat-value">${totalTok > 999 ? (totalTok/1000).toFixed(1)+'k' : totalTok || '—'}</div>
+      </div>
+    </div>
+  `;
+  panel.appendChild(summary);
+
+  // Stage cards
+  const cards = mk('div', 'stage-cards fu');
+  S.stages.forEach((ag, i) => {
+    const d = S.sd[i] || {};
+    if (d.status === 'pending') return;
+    cards.appendChild(buildStageCard(ag, d, i));
+  });
+  panel.appendChild(cards);
+}
+
+function buildStageCard(ag, d, i) {
+  const isOver   = d.status === 'override';
+  const isPassed = d.status === 'passed';
+  const isFailed = d.status === 'failed';
+  const cls      = isPassed ? 'sc-pass' : isOver ? 'sc-over' : 'sc-fail';
+  const iconHtml = isPassed ? ICONS.check : isOver ? ICONS.warn : ICONS.x;
+  const elapsed  = d.startTime && d.endTime ? fms(d.endTime - d.startTime) : '';
+  const toks     = [ftk(d.runUsage), ftk(d.govUsage)].filter(Boolean).join('+');
+  const score    = d.score != null ? `${d.score}/100` : '';
+
+  const card = mk('div', `stage-card ${cls}`);
+  const hdr  = mk('div', 'stage-card-hdr');
+
+  hdr.innerHTML = `
+    <div class="stage-card-icon">${iconHtml}</div>
+    <div class="stage-card-title">${esc(ag.label)}</div>
+    <div class="stage-card-stats">
+      ${score   ? `<span class="stat-chip">${score}</span>` : ''}
+      ${elapsed ? `<span class="stat-chip">${ICONS.clock} ${elapsed}</span>` : ''}
+      ${toks    ? `<span class="stat-chip">${ICONS.hash} ${toks}</span>` : ''}
+    </div>
+    <span class="stage-card-chevron">›</span>
+  `;
+
+  const body = mk('div', 'stage-card-body');
+  body.style.display = 'none';
+
+  if (d.output) {
+    const w = mk('div'); w.style.marginBottom = '12px';
+    w.appendChild(buildOutput(d.output, d.runUsage, null));
+    body.appendChild(w);
+  }
+  if (d.governance) {
+    const w = mk('div'); w.style.marginBottom = '12px';
+    w.appendChild(buildGov(d.governance, d.status));
+    body.appendChild(w);
+  }
+  if (d.condensed) {
+    body.appendChild(buildCond(d.condensed));
   }
 
-  function escHtml(str) {
-    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  hdr.onclick = () => {
+    card.classList.toggle('open');
+    body.style.display = card.classList.contains('open') ? 'block' : 'none';
+  };
+
+  card.appendChild(hdr);
+  card.appendChild(body);
+  return card;
+}
+
+// ── Block builders ─────────────────────────────────────────────────────────────
+function hdrEl(label) {
+  const h = mk('div', 'sp-hdr fu');
+  h.innerHTML = `<h2>${esc(label)}</h2>`;
+  return h;
+}
+function descEl(desc) {
+  const d = mk('div', 'sp-desc');
+  d.textContent = desc;
+  return d;
+}
+function buildOutput(output, runUsage, idx) {
+  const b = mk('div', 'out-block fu');
+  const tok = runUsage ? `↑${runUsage.input_tokens||0} ↓${runUsage.output_tokens||0}` : '';
+  const idAttr  = idx != null ? ` id="out-body-${idx}"` : '';
+  const tokId   = idx != null ? ` id="out-toks-${idx}"` : '';
+  const streamCls = (!runUsage && output) ? ' streaming' : '';
+  b.innerHTML = `
+    <div class="out-hdr">
+      <span class="out-hdr-lbl">Output</span>
+      <span class="out-toks"${tokId}>${tok}</span>
+    </div>
+    <div class="out-body${streamCls}"${idAttr}>${esc(output)}</div>`;
+  return b;
+}
+function buildGov(gov, status) {
+  const cls = status === 'override' ? 'gv-over' : gov.passed ? 'gv-pass' : 'gv-fail';
+  const lbl = status === 'override' ? '⚠ Override' : gov.passed ? '✓ Quality Check Passed' : '✗ Quality Check Failed';
+  const b = mk('div', `gov ${cls} fu`);
+  const issues = gov.issues?.length ? `<ul class="gov-issues">${gov.issues.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>` : '';
+  const gtok = gov.usage ? `<span class="gov-score">${ftk(gov.usage)} tok</span>` : '';
+  b.innerHTML = `
+    <div class="gov-row">
+      <span class="gov-status">${lbl}</span>
+      <span class="gov-score">${gov.score}/100</span>${gtok}
+    </div>
+    ${gov.verdict ? `<div class="gov-verdict">${esc(gov.verdict)}</div>` : ''}
+    ${issues}`;
+  return b;
+}
+function buildCond(condensed) {
+  const b = mk('div', 'cond fu');
+  b.innerHTML = `<div class="cond-lbl">→ Passed to next stage</div><div class="cond-body">${esc(condensed)}</div>`;
+  return b;
+}
+function buildInp(pending, idx, isRetry) {
+  const id  = `inp-${idx}-${Date.now()}`;
+  const lbl = isRetry ? 'Add context for retry — or leave blank to retry with feedback only' : (pending.prompt || 'Your input');
+  const b   = mk('div', 'inp fu');
+  b.innerHTML = `
+    <label>${esc(lbl)}</label>
+    <textarea id="${id}" rows="4" placeholder="${isRetry ? 'Optional: add more context…' : 'Your input…'}"></textarea>
+    <div class="inp-row">
+      <button class="btn-p" onclick="doSubmit('${id}')">Submit &rarr;</button>
+      ${isRetry ? `<button class="btn-g" onclick="doSubmit('${id}',true)">Skip (retry with feedback)</button>` : ''}
+    </div>`;
+  setTimeout(() => document.getElementById(id)?.focus(), 50);
+  return b;
+}
+function buildOverride(ag) {
+  const b = mk('div', 'ovr fu');
+  b.innerHTML = `
+    <h3>Max attempts reached</h3>
+    <p>The output for <strong>${esc(ag.label)}</strong> could not pass quality checks after the maximum number of attempts. You can override and continue, or end the session.</p>
+    <div class="inp-row">
+      <button class="btn-p" onclick="sendOverride('override')">Override &rarr; Accept &amp; Continue</button>
+      <button class="btn-d" onclick="sendOverride('quit')">End Session</button>
+    </div>`;
+  return b;
+}
+function buildContinueReview(idx) {
+  const prevIdx = idx - 1;
+  const prevAg  = S.stages[prevIdx] || {};
+  const prevD   = S.sd[prevIdx]     || {};
+  const nextAg  = S.stages[idx]     || {};
+  const b = mk('div', 'fu');
+  if (prevD.condensed) {
+    const cond = mk('div', 'cond');
+    cond.innerHTML = `<div class="cond-lbl">${esc(prevAg.label)} — summary passed to next stage</div><div class="cond-body">${esc(prevD.condensed)}</div>`;
+    b.appendChild(cond);
   }
+  const row = mk('div', 'inp');
+  row.style.marginTop = '14px';
+  row.innerHTML = `
+    <label>Review complete — ready to continue?</label>
+    <div class="inp-row">
+      <button class="btn-p" onclick="continueToNext()">Run ${esc(nextAg.label || 'Next Stage')} &rarr;</button>
+    </div>`;
+  b.appendChild(row);
+  return b;
+}
+
+// ── Actions ────────────────────────────────────────────────────────────────────
+let pendingTopic   = '';
+let pendingProblem = '';
+
+function toSlug(text) {
+  return text.toLowerCase().replace(/[^a-z0-9\s]/g,'').trim().split(/\s+/).slice(0,6).join('-');
+}
+
+async function startPipeline() {
+  const topicEl = document.getElementById('start-topic');
+  const problem = topicEl?.value.trim() || '';
+  if (!problem) return;
+
+  pendingProblem = problem;
+  pendingTopic   = toSlug(problem);
+
+  const btn = document.getElementById('btn-start');
+  if (btn) btn.disabled = true;
+  Object.assign(S, { status:'running', activeIdx:-1, pinned:null, input:null, tokIn:0, tokOut:0, stages:[], sd:[] });
+  document.getElementById('hdr-topic').textContent  = pendingTopic;
+  document.getElementById('tok-count').textContent  = '0';
+  document.getElementById('log-body').innerHTML     = '';
+  const ap = document.getElementById('analytics-panel');
+  if (ap) ap.style.display = 'none';
+  renderPanel();
+
+  let res = await fetch('/start', { method:'POST' });
+  if (res.status === 409) {
+    appendLog('warn', 'Resetting stale pipeline…');
+    await fetch('/reset', { method:'POST' });
+    res = await fetch('/start', { method:'POST' });
+  }
+  if (!res.ok) {
+    const err = await res.json();
+    appendLog('error', err.error || 'Failed to start');
+    S.status = 'idle'; pendingTopic = ''; pendingProblem = ''; renderPanel();
+    if (btn) btn.disabled = false;
+  }
+}
+
+function continueToNext() {
+  S.input = null;
+  const idx = S.activeIdx;
+  if (idx >= 0) { S.sd[idx].status = 'thinking'; refreshSI(idx); }
+  fetch('/input', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ value:'' }) });
+  renderPanel();
+}
+
+function doSubmit(id, blank = false) {
+  const el    = document.getElementById(id);
+  const value = blank ? '' : (el?.value || '');
+  S.input     = null;
+  if (S.activeIdx < 0 && value) document.getElementById('hdr-topic').textContent = value;
+  fetch('/input', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ value }) });
+  if (S.activeIdx >= 0) { S.sd[S.activeIdx].status = 'thinking'; refreshSI(S.activeIdx); }
+  renderPanel();
+}
+
+function sendOverride(choice) {
+  S.input = null;
+  fetch('/input', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ value: choice }) });
+}
+
+function pin(i) {
+  if (!S.sd[i]?.output) return;
+  S.pinned = i;
+  document.querySelectorAll('.si').forEach((el, idx) => el.classList.toggle('s-pin', idx === i));
+  renderPanel();
+}
+function unpin() {
+  S.pinned = null;
+  document.querySelectorAll('.si').forEach(el => el.classList.remove('s-pin'));
+  renderPanel();
+}
+
+function updateTok() {
+  const t = S.tokIn + S.tokOut;
+  document.getElementById('tok-count').textContent = t > 999 ? (t/1000).toFixed(1)+'k' : t;
+}
+
+// ── Analytics ──────────────────────────────────────────────────────────────────
+// Pricing: Claude Sonnet — $3/1M input tokens, $15/1M output tokens
+const PRICE_IN  = 3.00  / 1_000_000;
+const PRICE_OUT = 15.00 / 1_000_000;
+
+function fmtCost(d) {
+  if (d === 0)     return '$0.000';
+  if (d < 0.001)   return '<$0.001';
+  if (d < 1)       return '$' + d.toFixed(3);
+  return '$' + d.toFixed(2);
+}
+
+function updateAnalytics() {
+  const panel = document.getElementById('analytics-panel');
+  if (!panel) return;
+
+  if (S.status === 'idle' || !S.stages.length) {
+    panel.style.display = 'none';
+    return;
+  }
+  panel.style.display = 'block';
+
+  // ── Cost ──
+  const cost     = S.tokIn * PRICE_IN + S.tokOut * PRICE_OUT;
+  const totalTok = S.tokIn + S.tokOut;
+  const costEl   = document.getElementById('an-cost');
+  const costSub  = document.getElementById('an-cost-sub');
+  if (costEl)  costEl.textContent  = fmtCost(cost);
+  if (costSub) costSub.textContent = totalTok > 0
+    ? `${totalTok > 999 ? (totalTok/1000).toFixed(1)+'k' : totalTok} tokens used`
+    : 'awaiting tokens';
+
+  // ── Quality — average governance score across completed stages ──
+  const scored   = S.sd.filter(d => d.score != null);
+  const avgScore = scored.length
+    ? Math.round(scored.reduce((a, d) => a + d.score, 0) / scored.length)
+    : null;
+  const qualEl  = document.getElementById('an-quality');
+  const qualBar = document.getElementById('an-quality-bar');
+  const qualSub = document.getElementById('an-quality-sub');
+  const qColor  = avgScore == null ? '' : avgScore >= 80 ? 'c-green' : avgScore >= 60 ? 'c-amber' : 'c-red';
+  if (qualEl)  { qualEl.textContent = avgScore != null ? `${avgScore}/100` : '—'; qualEl.className = `an-value ${qColor}`; }
+  if (qualBar && avgScore != null) {
+    qualBar.style.width      = `${avgScore}%`;
+    qualBar.style.background = avgScore >= 80 ? 'var(--green)' : avgScore >= 60 ? 'var(--amber)' : 'var(--red)';
+  }
+  if (qualSub) qualSub.textContent = scored.length > 0
+    ? `across ${scored.length} stage${scored.length > 1 ? 's' : ''}`
+    : 'avg governance score';
+
+  // ── Pass Rate — stages that completed vs attempted ──
+  const attempted  = S.sd.filter(d => !['pending','waiting','thinking','override-req'].includes(d.status));
+  const passed     = attempted.filter(d => d.status === 'passed' || d.status === 'override');
+  const pct        = attempted.length ? Math.round((passed.length / attempted.length) * 100) : null;
+  const passEl  = document.getElementById('an-pass');
+  const passBar = document.getElementById('an-pass-bar');
+  const passSub = document.getElementById('an-pass-sub');
+  const pColor  = pct == null ? '' : pct === 100 ? 'c-green' : pct >= 60 ? 'c-amber' : 'c-red';
+  if (passEl)  { passEl.textContent = attempted.length > 0 ? `${passed.length} / ${attempted.length}` : '—'; passEl.className = `an-value ${pColor}`; }
+  if (passBar && pct != null) {
+    passBar.style.width      = `${pct}%`;
+    passBar.style.background = pct === 100 ? 'var(--green)' : pct >= 60 ? 'var(--amber)' : 'var(--red)';
+  }
+  if (passSub) passSub.textContent = pct != null
+    ? `${pct}% efficiency`
+    : 'stages completed';
+}
+
+// ── Logs ───────────────────────────────────────────────────────────────────────
+function appendLog(level, text) {
+  const body = document.getElementById('log-body');
+  const line = mk('div', `ll l-${level}`);
+  line.textContent = text;
+  body.appendChild(line);
+  body.scrollTop = body.scrollHeight;
+  const latest = document.getElementById('log-latest');
+  latest.textContent = text;
+  latest.className = `l-${level}`;
+}
+
+let logsOpen = false;
+function toggleLogs() {
+  logsOpen = !logsOpen;
+  document.getElementById('logs').classList.toggle('closed', !logsOpen);
+  document.getElementById('log-tog').textContent = logsOpen ? '▼ collapse' : '▲ expand';
+}
+
+// ── Context editor ─────────────────────────────────────────────────────────────
+let ctxFiles = {}, ctxActive = null;
+
+async function openCtx() {
+  document.getElementById('ctx-mask').classList.add('open');
+  document.getElementById('ctx-status').textContent = 'Loading…';
+  const res = await fetch('/context');
+  ctxFiles  = await res.json();
+  const tabs = document.getElementById('ctx-tabs');
+  tabs.innerHTML = '';
+  const keys = Object.keys(ctxFiles).sort((a,b) => a==='shared.md'?-1:b==='shared.md'?1:a.localeCompare(b));
+  keys.forEach(f => {
+    const t = mk('div', 'ctx-tab');
+    t.id = `ct-${f}`;
+    t.textContent = f.replace('.md','');
+    t.onclick = () => switchCtx(f);
+    tabs.appendChild(t);
+  });
+  document.getElementById('ctx-status').textContent = '';
+  switchCtx(keys[0]);
+}
+
+function switchCtx(file) {
+  ctxActive = file;
+  document.querySelectorAll('.ctx-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(`ct-${file}`)?.classList.add('active');
+  document.getElementById('ctx-ta').value = ctxFiles[file] || '';
+}
+
+async function saveCtx() {
+  if (!ctxActive) return;
+  const content = document.getElementById('ctx-ta').value;
+  const st = document.getElementById('ctx-status');
+  st.textContent = 'Saving…'; st.style.color = '';
+  ctxFiles[ctxActive] = content;
+  const res = await fetch(`/context/${encodeURIComponent(ctxActive)}`, {
+    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ content })
+  });
+  if (res.ok) { st.textContent = '✓ Saved'; setTimeout(()=>{ st.textContent=''; }, 2000); }
+  else { st.style.color='var(--red)'; st.textContent='✗ Error'; }
+}
+
+function closeCtx()  { document.getElementById('ctx-mask').classList.remove('open'); }
+function handleMask(e) { if (e.target===document.getElementById('ctx-mask')) closeCtx(); }
+
+// Enter to submit single-line inputs
+document.addEventListener('keydown', e => {
+  if (e.key==='Enter' && !e.shiftKey && document.activeElement?.tagName==='INPUT' && document.activeElement.type==='text') {
+    e.preventDefault();
+    document.activeElement.closest('.inp')?.querySelector('.btn-p')?.click();
+  }
+});
 </script>
 </body>
 </html>
