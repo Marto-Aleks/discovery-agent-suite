@@ -109,7 +109,7 @@ The dashboard supports a lightweight evidence-ingestion workflow.
 End users can:
 
 - paste evidence text directly into the UI
-- import `.txt`, `.md`, `.csv`, or `.json` files from their machine
+- import `.txt`, `.md`, `.csv`, `.json`, `.docx`, `.xlsx`, or `.pdf` files from their machine
 - ask the evidence-triage agent to auto-label the intake
 - label each evidence item by type
 - scope evidence to all stages or a specific stage
@@ -133,6 +133,16 @@ The frontend flow is:
 3. Review the suggested title, type, stage scope, confidence, and summary
 4. Accept the suggestion or edit manually
 5. Add the evidence to the session library
+
+Supported document parsing:
+
+- plain text and markdown: direct UTF-8 extraction
+- CSV and JSON: direct text extraction
+- Word documents (`.docx`): server-side text extraction
+- Excel spreadsheets (`.xlsx`): sheet-by-sheet text extraction
+- PDFs (`.pdf`): text extraction for text-based PDFs
+
+Note: scanned/image-only PDFs are not reliably supported yet because they require OCR rather than text extraction.
 
 Examples:
 

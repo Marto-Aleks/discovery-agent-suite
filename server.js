@@ -10,6 +10,7 @@ import { saveSession } from "./lib/session-save.js";
 import { createEvidenceStore } from "./evidence/store.js";
 import { selectEvidenceForAgent, EVIDENCE_TYPE_LABELS } from "./evidence/routing.js";
 import { triageEvidence } from "./evidence/triage.js";
+import { parseUploadedEvidence } from "./evidence/parse.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
@@ -154,6 +155,18 @@ app.get("/evidence-meta", (_req, res) => {
 
 app.get("/evidence", (_req, res) => {
   res.json(evidenceStore.list());
+});
+
+app.post("/evidence/parse", async (req, res) => {
+  try {
+    const parsed = await parseUploadedEvidence(req.body || {});
+    if (!parsed.text) {
+      return res.status(400).json({ error: "Could not extract usable text from this file." });
+    }
+    res.json(parsed);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
 });
 
 app.post("/evidence/triage", (req, res) => {
