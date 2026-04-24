@@ -54,6 +54,7 @@ app.post("/input", (req, res) => {
 
 // ── Pipeline state ─────────────────────────────────────────────────────────────
 let pipelineRunning = false;
+let runLog = [];
 
 app.post("/reset", (_req, res) => {
   pipelineRunning = false;
@@ -64,6 +65,7 @@ app.post("/reset", (_req, res) => {
 app.post("/start", (_req, res) => {
   if (pipelineRunning) return res.status(409).json({ error: "Pipeline already running" });
   pipelineRunning = true;
+  runLog = [];
   res.json({ ok: true });
   startPipeline();
 });
@@ -119,7 +121,10 @@ async function startPipeline() {
         emit("agent-complete", { index, score, passed, govUsage, ...(override ? { override } : {}) }),
       onOverrideRequest: ({ index, agent }) => emit("override-request", { index, label: agent.label }),
       onPipelineGovernance: ({ result }) => emit("pipeline-governance", result),
-      onLog: ({ level, text }) => emit("log", { level, text }),
+      onLog: ({ level, text }) => {
+        runLog.push(`[${new Date().toISOString()}] [${level.toUpperCase().padEnd(7)}] ${text}`);
+        emit("log", { level, text });
+      },
       getAllEvidence: () => evidenceStore.list(),
       getEvidenceForAgent: (agent, session) => selectEvidenceForAgent(agent.id, evidenceStore.list(), session),
     });
@@ -127,6 +132,9 @@ async function startPipeline() {
     const savedPath = saveSession(result.session);
     if (savedPath) {
       emit("log", { level: "success", text: `Session saved to: ${savedPath}` });
+      const logPath = savedPath.replace(/\.md$/, ".run.log");
+      writeFileSync(logPath, runLog.join("\n") + "\n");
+      emit("log", { level: "muted", text: `Run log saved to: ${logPath}` });
     }
 
     emit("pipeline-complete", {

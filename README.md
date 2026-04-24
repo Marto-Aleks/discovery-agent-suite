@@ -87,8 +87,13 @@ Shared pipeline orchestration:
 
 - [config.js](/Users/alm1sf/discovery-agent-suite/pipeline/config.js) defines stage order and runtime options
 - [runner.js](/Users/alm1sf/discovery-agent-suite/pipeline/runner.js) executes the loop, retries, governance, and carry-forward context
-- [governance.js](/Users/alm1sf/discovery-agent-suite/pipeline/governance.js) handles richer governance parsing and final pipeline review
+- [governance.js](/Users/alm1sf/discovery-agent-suite/pipeline/governance.js) handles structured tool-use governance and final pipeline review
 - [shared.js](/Users/alm1sf/discovery-agent-suite/pipeline/shared.js) contains condensation and shared helper logic
+
+### `lib/`
+Server-side utilities:
+
+- [session-save.js](/Users/alm1sf/discovery-agent-suite/lib/session-save.js) serialises completed sessions to markdown and saves them to `sessions/`
 
 ## Runtime Flow Example
 
@@ -152,6 +157,17 @@ Examples:
 - Prioritisation gets commercial, strategy, dependency, capacity, and analytics evidence
 
 When a stage starts, the runner selects the most relevant evidence items and injects them into the prompt alongside the carried-forward session summary. The dashboard also shows which evidence each stage used.
+
+## Session Saving
+
+When a pipeline run completes, two files are written to `sessions/`:
+
+- `<date>_<topic-slug>.md` — full session output including stage results, governance scores, evidence used, and a token usage table with cache efficiency
+- `<date>_<topic-slug>.run.log` — timestamped log of every pipeline event from the run
+
+The session markdown includes a pipeline summary table and, if final governance ran, a full cross-stage review. Token usage is broken down per stage (run in/out, cache read/write, governance in/out) with a totals row and overall cache efficiency percentage.
+
+The `sessions/` directory is created automatically on first save.
 
 ## Running Locally
 

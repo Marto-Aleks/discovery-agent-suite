@@ -39,16 +39,18 @@ export function createSession() {
   };
 }
 
+const CONDENSE_SYSTEM = "You are a precise summariser. Extract only the key decisions, outputs, and facts from the agent output below. Use bullet points. Be ruthlessly concise, grounded, and under 200 words.";
+
 export async function condenseOutput(client, agentLabel, output) {
   const response = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
     max_tokens: Number.parseInt(process.env.CONDENSE_MAX_TOKENS || "", 10) || 256,
-    system:
-      "You are a precise summariser. Extract only the key decisions, outputs, and facts from the agent output below. Use bullet points. Be ruthlessly concise, grounded, and under 200 words.",
+    system: [{ type: "text", text: CONDENSE_SYSTEM, cache_control: { type: "ephemeral" } }],
     messages: [{ role: "user", content: `Agent: ${agentLabel}\n\n${output}` }],
   });
 
-  return response.content[0].text;
+  const textBlock = response.content.find((b) => b.type === "text");
+  return textBlock?.text ?? "";
 }
 
 export function formatAnthropicError(error) {

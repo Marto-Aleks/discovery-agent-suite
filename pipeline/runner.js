@@ -154,6 +154,7 @@ export async function runPipeline(client, pipeline, hooks = {}) {
           score: governance.score,
           passed: true,
           governance,
+          runUsage,
         });
         hooks.onAgentCondensed?.({ index, agent, condensed });
         hooks.onAgentComplete?.({ index, agent, score: governance.score, passed: true, govUsage: governance.usage });
@@ -189,6 +190,7 @@ export async function runPipeline(client, pipeline, hooks = {}) {
           score: 0,
           passed: false,
           governance: lastGovernance,
+          runUsage,
         });
         hooks.onAgentCondensed?.({ index, agent, condensed });
         hooks.onAgentComplete?.({ index, agent, score: 0, passed: false, override: true, govUsage: null });

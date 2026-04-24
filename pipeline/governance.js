@@ -1,9 +1,3 @@
-function extractJson(text) {
-  const full = String(text || "").trim();
-  const match = full.match(/\{[\s\S]*\}/);
-  return JSON.parse(match ? match[0] : full);
-}
-
 function normalizeList(value) {
   return Array.isArray(value) ? value.filter(Boolean).map((item) => String(item)) : [];
 }
@@ -21,10 +15,6 @@ export function normalizeGovernanceResult(parsed, usage = null) {
     contradictions: normalizeList(parsed?.contradictions),
     usage,
   };
-}
-
-export function parseGovernanceResponse(text, usage = null) {
-  return normalizeGovernanceResult(extractJson(text), usage);
 }
 
 export function buildGovernanceContext({ label, output, sessionSummary = "", evidence = [], previousHistory = [] }) {
@@ -64,14 +54,7 @@ export function buildGovernanceContext({ label, output, sessionSummary = "", evi
   ].join("\n");
 }
 
-export async function runFinalPipelineGovernance(client, session) {
-  if (!session?.history?.length) return null;
-
-  const response = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: Number.parseInt(process.env.FINAL_GOVERNANCE_MAX_TOKENS || "", 10) || 1200,
-    system: `
-You are the final governance reviewer for an AI-driven product discovery pipeline.
+const FINAL_GOVERNANCE_SYSTEM = `You are the final governance reviewer for an AI-driven product discovery pipeline.
 
 Your role: evaluate the integrity of the whole session, not just one stage.
 
@@ -82,20 +65,36 @@ Review the session for:
 4. Decision usefulness - could a product team act on this output responsibly?
 5. Residual uncertainty - what still blocks confident delivery or prioritisation?
 
-Respond ONLY with valid JSON in this format:
-{
-  "passed": true or false,
-  "score": 0-100,
-  "issues": ["issue 1", "issue 2"],
-  "verdict": "one sentence summary",
-  "evidenceGrounding": "strong|partial|weak",
-  "alignment": "strong|partial|weak",
-  "assumptions": ["assumption 1"],
-  "contradictions": ["contradiction 1"]
-}
+Pass threshold: score >= 70 and no critical contradictions.`;
 
-Pass threshold: score >= 70 and no critical contradictions.
-`,
+const FINAL_GOVERNANCE_TOOL = {
+  name: "submit_final_governance",
+  description: "Submit the final cross-stage governance evaluation for the full pipeline session.",
+  input_schema: {
+    type: "object",
+    properties: {
+      passed: { type: "boolean" },
+      score: { type: "number" },
+      issues: { type: "array", items: { type: "string" } },
+      verdict: { type: "string" },
+      evidenceGrounding: { type: "string" },
+      alignment: { type: "string" },
+      assumptions: { type: "array", items: { type: "string" } },
+      contradictions: { type: "array", items: { type: "string" } },
+    },
+    required: ["passed", "score", "issues", "verdict", "evidenceGrounding", "alignment", "assumptions", "contradictions"],
+  },
+};
+
+export async function runFinalPipelineGovernance(client, session) {
+  if (!session?.history?.length) return null;
+
+  const response = await client.messages.create({
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: Number.parseInt(process.env.FINAL_GOVERNANCE_MAX_TOKENS || "", 10) || 1200,
+    system: [{ type: "text", text: FINAL_GOVERNANCE_SYSTEM, cache_control: { type: "ephemeral" } }],
+    tools: [FINAL_GOVERNANCE_TOOL],
+    tool_choice: { type: "tool", name: "submit_final_governance" },
     messages: [
       {
         role: "user",
@@ -116,9 +115,9 @@ Pass threshold: score >= 70 and no critical contradictions.
           ].join("\n")).join("\n\n---\n\n"),
         ].join("\n"),
       },
-      { role: "assistant", content: "{" },
     ],
   });
 
-  return parseGovernanceResponse("{" + response.content[0].text, response.usage);
+  const toolUse = response.content.find((b) => b.type === "tool_use");
+  return normalizeGovernanceResult(toolUse?.input ?? {}, response.usage);
 }
