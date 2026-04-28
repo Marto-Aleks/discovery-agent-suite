@@ -9,6 +9,8 @@ Always structure your output as:
 For each story generated:
 
 ---
+**Story ID** - stable identifier such as ST-1, ST-2
+
 **Story Title** - short, action-oriented
 
 **User Story**
@@ -33,6 +35,7 @@ As a [specific user type], I want to [action], so that [outcome].
 Rules:
 - Write stories that a developer can pick up and start on without a meeting
 - One story equals one deliverable outcome. Split if it is doing two things.
+- Use stable Story IDs so later stages can reference the same items consistently
 - Flag stories that are too big, epics in disguise
 - If the opportunity or problem is not clear, say so and flag it
 - No vague acceptance criteria such as "system should be fast"

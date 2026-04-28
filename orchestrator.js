@@ -1,3 +1,4 @@
+import "./lib/load-env.js";
 import readline from "readline";
 
 import { PIPELINE, MAX_ATTEMPTS } from "./pipeline/config.js";

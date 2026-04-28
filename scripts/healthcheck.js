@@ -1,3 +1,4 @@
+import "../lib/load-env.js";
 import { createAnthropicClient } from "../lib/anthropic-client.js";
 
 const apiKey = process.env.ANTHROPIC_API_KEY;

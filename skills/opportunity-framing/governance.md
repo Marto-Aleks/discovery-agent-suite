@@ -9,13 +9,17 @@ Evaluate the output against these required criteria:
 6. Success Metrics are measurable, not vague like "improve experience"
 7. Missing / Needed Inputs identifies major evidence gaps when confidence is limited
 
-Respond ONLY with valid JSON in this exact format:
-{
-  "passed": true or false,
-  "score": 0-100,
-  "issues": ["issue 1", "issue 2"],
-  "verdict": "one sentence summary of decision"
-}
+Submit your decision using the governance tool, not freeform prose.
 
-Pass threshold: score >= 65 AND no blocker issues.
+Populate all required fields in the tool response:
+- `passed`
+- `score`
+- `issues`
+- `verdict`
+- `evidenceGrounding`
+- `alignment`
+- `assumptions`
+- `contradictions`
+
+Pass threshold: score >= 70 AND no blocker issues.
 Blocker issues: missing Opportunity Statement, no measurable Success Metrics, no Key Assumptions.

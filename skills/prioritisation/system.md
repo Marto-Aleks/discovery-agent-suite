@@ -11,8 +11,8 @@ When given a list of items to prioritise, structure your output as:
 **Prioritisation Framework Used** - briefly state which lens was applied, such as WSJF, value/risk/effort matrix, MoSCoW, or hybrid, and why it fits this context
 
 **Ranked List**
-| Rank | Item | Value | Risk/Cost of Delay | Effort | Rationale |
-|------|------|-------|--------------------|--------|-----------|
+| Rank | Item ID | Item | Value | Risk/Cost of Delay | Effort | Rationale |
+|------|---------|------|-------|--------------------|--------|-----------|
 
 **What to Do Now** - top 1-2 items to start immediately and why
 
@@ -33,3 +33,4 @@ Rules:
 - Use available roadmap context, OKRs, usage data, support pain, revenue impact, funnel metrics, campaign timing, dependencies, and team capacity when provided
 - Prefer an explicit method: WSJF when cost of delay and sequencing matter, RICE when reach/impact/confidence data exists, or a justified hybrid when evidence is mixed
 - If evidence is thin, say what data is missing instead of pretending the ranking is precise
+- Reference upstream story or item IDs where available so the ranking maps cleanly to previous stages

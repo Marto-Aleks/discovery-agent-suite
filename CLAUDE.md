@@ -76,12 +76,14 @@ Every runtime agent file exports:
 
 ```bash
 npm install
-ANTHROPIC_API_KEY=<your-key> npm start
+cp .env.example .env.local
+# add ANTHROPIC_API_KEY to .env.local
+npm start
 ```
 
 Opens at `http://localhost:3000`. Set `PORT` env var to override.
 
-**Requires:** `ANTHROPIC_API_KEY` in environment. No build step.
+**Requires:** `ANTHROPIC_API_KEY` via environment or `.env.local`. No build step.
 
 ---
 

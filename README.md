@@ -64,6 +64,13 @@ Each skill contains:
 
 Skills define how a stage should work, independent of any specific project.
 
+The current skill contract is:
+
+- produce a bounded draft even when context is incomplete
+- capture gaps under `Missing / Needed Inputs`
+- reuse stable IDs when later stages need to reference earlier outputs
+- submit governance through the structured governance tool instead of raw JSON prose
+
 ### `context/`
 Project-specific and organisation-specific facts.
 
@@ -106,6 +113,12 @@ If you enter a topic like `checkout drop-off on mobile`, the pipeline works like
 5. Prioritisation ranks the work by value, risk, and effort.
 
 Each passed stage adds a condensed summary to session history, so later stages build on earlier outputs.
+
+The downstream stages now stay linked by shared identifiers:
+
+- Story Creation assigns stable story IDs such as `ST-1`, `ST-2`
+- Estimation carries those IDs forward when sizing the work
+- Prioritisation ranks the same IDs so decisions map back to the generated stories
 
 ## Evidence Ingestion
 
@@ -177,11 +190,19 @@ Install dependencies:
 npm install
 ```
 
-Set your Anthropic API key:
+Create a local env file once:
 
 ```bash
-export ANTHROPIC_API_KEY="your_api_key"
+cp .env.example .env.local
 ```
+
+Then edit `.env.local` and add your real key:
+
+```bash
+ANTHROPIC_API_KEY=your_api_key
+```
+
+After that, local testing is just one command per workflow.
 
 Start the dashboard:
 
@@ -200,6 +221,12 @@ Run the health check:
 ```bash
 npm run healthcheck
 ```
+
+Notes:
+
+- `server.js`, `orchestrator.js`, and `scripts/healthcheck.js` now auto-load `.env` and `.env.local`
+- values already exported in your shell still win over file-based values
+- use `.env.local` for machine-specific secrets; it is gitignored
 
 ## Important Files
 
@@ -242,6 +269,8 @@ The governance response includes:
 - cross-stage alignment strength
 - assumptions
 - contradictions
+
+Stage governance now uses a `70` pass threshold, with each skill's `governance.md` defining any blocker conditions for that stage.
 
 At the end of the pipeline, a final governance pass evaluates the session as a whole for:
 
