@@ -1,5 +1,5 @@
 import { getRuntimeConfig } from "./config.js";
-import { buildGovernanceFeedback, condenseOutput, createSession, formatAnthropicError, shouldDisableCondense } from "./shared.js";
+import { buildGovernanceFeedback, condenseOutput, createSession, formatAnthropicError } from "./shared.js";
 import { formatEvidenceForPrompt } from "../evidence/routing.js";
 import { runFinalPipelineGovernance } from "./governance.js";
 
@@ -136,8 +136,65 @@ export async function runPipeline(client, pipeline, hooks = {}) {
       hooks.onGovernance?.({ index, agent, result: governance });
 
       if (governance.passed) {
+        if (hooks.reviewAgentOutput) {
+          hooks.onLog?.({ level: "info", text: `Awaiting review for ${agent.label}...` });
+          const reviewedOutput = await hooks.reviewAgentOutput({
+            index,
+            agent,
+            output,
+            governance,
+            session,
+            runUsage,
+          });
+          const trimmedReviewedOutput = String(reviewedOutput || "").trim();
+
+          if (trimmedReviewedOutput && trimmedReviewedOutput !== output.trim()) {
+            output = trimmedReviewedOutput;
+            lastOutput = output;
+            const lastMessage = conversationHistory[conversationHistory.length - 1];
+            if (lastMessage?.role === "assistant") lastMessage.content = output;
+            hooks.onAgentOutput?.({ index, agent, output, runUsage, reviewed: true });
+            hooks.onLog?.({ level: "info", text: "Checkpoint edits applied. Re-running governance check..." });
+
+            try {
+              governance = await agent.govern(client, output, {
+                sessionSummary: session.summary,
+                evidence: stageEvidence,
+                previousHistory: session.history,
+              });
+            } catch (error) {
+              hooks.onLog?.({ level: "error", text: `Governance error: ${formatAnthropicError(error)}` });
+              governance = {
+                passed: false,
+                score: 0,
+                issues: ["Governance check errored after checkpoint edits."],
+                verdict: "Could not evaluate edited output.",
+                evidenceGrounding: "unknown",
+                alignment: "unknown",
+                assumptions: [],
+                contradictions: [],
+                usage: null,
+              };
+            }
+
+            lastGovernance = governance;
+            hooks.onGovernance?.({ index, agent, result: governance });
+
+            if (!governance.passed) {
+              hooks.onLog?.({ level: "warn", text: "Checkpoint edits did not pass governance." });
+              if (attempt < runtime.maxAttempts) {
+                conversationHistory.push({ role: "user", content: buildGovernanceFeedback(governance) });
+                hooks.onLog?.({ level: "warn", text: `${runtime.maxAttempts - attempt} attempt(s) remaining.` });
+              }
+              continue;
+            }
+          } else {
+            hooks.onLog?.({ level: "success", text: "Checkpoint approved." });
+          }
+        }
+
         let condensed = output.slice(0, 600);
-        if (shouldDisableCondense() || runtime.disableCondense) {
+        if (runtime.disableCondense) {
           hooks.onLog?.({ level: "muted", text: "Skipping condensation in test mode." });
         } else {
           hooks.onLog?.({ level: "muted", text: "Condensing output for downstream context..." });
@@ -176,7 +233,7 @@ export async function runPipeline(client, pipeline, hooks = {}) {
       if (choice.trim().toLowerCase() === "override") {
         const rawOutput = lastOutput ?? "(no output)";
         let condensed = rawOutput.slice(0, 600);
-        if (lastOutput && !shouldDisableCondense() && !runtime.disableCondense) {
+        if (lastOutput && !runtime.disableCondense) {
           try {
             condensed = await condenseOutput(client, agent.label, lastOutput);
           } catch (err) {

@@ -759,6 +759,25 @@
       font-size: 12px;
       color: var(--dim);
     }
+    .review-box {
+      border-color: rgba(10,132,255,.36);
+      background: rgba(10,132,255,.08);
+    }
+    .review-box label {
+      color: var(--accent);
+    }
+    .review-meta {
+      font-size: 12px;
+      color: var(--dim);
+      line-height: 1.7;
+      margin: -2px 0 12px;
+    }
+    .review-box textarea {
+      min-height: 360px;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.75;
+    }
 
     /* ── Thinking ── */
     .think {
@@ -1244,13 +1263,15 @@ sse.addEventListener('agent-chunk', e => {
 });
 
 sse.addEventListener('agent-output', e => {
-  const { index, output, runUsage } = JSON.parse(e.data);
+  const { index, output, runUsage, reviewed } = JSON.parse(e.data);
   S.sd[index].output = output;
   S.sd[index].runUsage = runUsage;
-  if (runUsage) { S.tokIn += runUsage.input_tokens || 0; S.tokOut += runUsage.output_tokens || 0; updateTok(); updateAnalytics(); }
+  if (reviewed) S.sd[index].reviewed = true;
+  if (runUsage && !reviewed) { S.tokIn += runUsage.input_tokens || 0; S.tokOut += runUsage.output_tokens || 0; updateTok(); updateAnalytics(); }
   const body = document.getElementById(`out-body-${index}`);
   const toks = document.getElementById(`out-toks-${index}`);
   if (body) {
+    body.textContent = output;
     body.classList.remove('streaming');
     if (toks && runUsage) toks.textContent = `↑${runUsage.input_tokens || 0} ↓${runUsage.output_tokens || 0}`;
   } else if (S.pinned === null) {
@@ -1307,9 +1328,10 @@ sse.addEventListener('input-request', e => {
         return;
       }
       if (idx > 0) {
-        S.input = { prompt, type, review: true };
-        S.sd[idx].status = 'waiting';
+        S.input = null;
+        S.sd[idx].status = 'thinking';
         refreshSI(idx);
+        fetch('/input', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value: '' }) });
         if (S.pinned === null) renderPanel();
         return;
       }
@@ -1319,6 +1341,18 @@ sse.addEventListener('input-request', e => {
     S.sd[idx].status = 'waiting';
     refreshSI(idx);
     renderPanel();
+    return;
+  }
+
+  if (type === 'review-output') {
+    const idx = S.activeIdx;
+    if (idx >= 0) {
+      S.input = { prompt, type };
+      S.sd[idx].status = 'review';
+      refreshSI(idx);
+      if (S.pinned === idx) S.pinned = null;
+      renderPanel();
+    }
     return;
   }
 
@@ -1371,7 +1405,7 @@ function refreshSI(i) {
   const elapsed = d.startTime ? (d.endTime || Date.now()) - d.startTime : 0;
 
   const stCls = {
-    pending:'', waiting:'s-act', thinking:'s-act',
+    pending:'', waiting:'s-act', thinking:'s-act', review:'s-act',
     passed:'s-pass', failed:'s-fail', override:'s-over', 'override-req':'s-act'
   }[d.status] || '';
   el.className = `si ${stCls} ${S.pinned === i ? 's-pin' : ''}`;
@@ -1379,6 +1413,7 @@ function refreshSI(i) {
   const [bc, bt] = {
     pending:        ['b-pend','pending'],
     waiting:        ['b-wait','input'],
+    review:         ['b-wait','review'],
     thinking:       ['b-think','thinking…'],
     passed:         ['b-pass', d.score != null ? `${d.score}/100` : 'passed'],
     failed:         ['b-fail', d.score != null ? `${d.score}/100` : 'failed'],
@@ -1409,7 +1444,7 @@ function renderPipelineTrack() {
   S.stages.forEach((ag, i) => {
     const d = S.sd[i] || { status: 'pending' };
     const isDone     = d.status === 'passed' || d.status === 'override';
-    const isActive   = d.status === 'thinking' || d.status === 'waiting' || d.status === 'override-req';
+    const isActive   = d.status === 'thinking' || d.status === 'waiting' || d.status === 'review' || d.status === 'override-req';
     const isFailed   = d.status === 'failed';
     const isOverride = d.status === 'override';
 
@@ -1489,6 +1524,9 @@ function renderPanel() {
   if (d.status === 'waiting' && S.input) {
     if (S.input.review) panel.appendChild(buildContinueReview(idx));
     else panel.appendChild(buildInp(S.input, idx, !!d.output));
+  }
+  if (d.status === 'review' && S.input?.type === 'review-output') {
+    panel.appendChild(buildOutputReview(S.input, idx));
   }
 
   if (d.status === 'thinking' && !d.output) {
@@ -1715,6 +1753,23 @@ function buildInp(pending, idx, isRetry) {
     <div class="inp-row">
       <button class="btn-p" onclick="doSubmit('${id}')">Submit &rarr;</button>
       ${isRetry ? `<button class="btn-g" onclick="doSubmit('${id}',true)">Skip (retry with feedback)</button>` : ''}
+    </div>`;
+  setTimeout(() => document.getElementById(id)?.focus(), 50);
+  return b;
+}
+function buildOutputReview(pending, idx) {
+  const d = S.sd[idx] || {};
+  const ag = S.stages[idx] || {};
+  const id = `review-${idx}-${Date.now()}`;
+  const score = d.governance?.score != null ? `${d.governance.score}/100` : 'passed';
+  const b = mk('div', 'inp review-box fu');
+  b.innerHTML = `
+    <label>${esc(pending.prompt || `Review ${ag.label || 'stage'} output`)}</label>
+    <div class="review-meta">Quality check: ${esc(score)}. Edits will be checked again before the next stage runs.</div>
+    <textarea id="${id}" rows="16">${esc(d.output || '')}</textarea>
+    <div class="inp-row">
+      <button class="btn-p" onclick="submitReview('${id}')">Approve &amp; Continue &rarr;</button>
+      <button class="btn-g" onclick="resetReviewText('${id}', ${idx})">Restore Generated</button>
     </div>`;
   setTimeout(() => document.getElementById(id)?.focus(), 50);
   return b;
@@ -2047,6 +2102,25 @@ function doSubmit(id, blank = false) {
   fetch('/input', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ value }) });
   if (S.activeIdx >= 0) { S.sd[S.activeIdx].status = 'thinking'; refreshSI(S.activeIdx); }
   renderPanel();
+}
+
+function submitReview(id) {
+  const el = document.getElementById(id);
+  const value = el?.value || '';
+  const idx = S.activeIdx;
+  S.input = null;
+  if (idx >= 0) {
+    S.sd[idx].output = value;
+    S.sd[idx].status = 'thinking';
+    refreshSI(idx);
+  }
+  fetch('/input', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ value }) });
+  renderPanel();
+}
+
+function resetReviewText(id, idx) {
+  const el = document.getElementById(id);
+  if (el) el.value = S.sd[idx]?.output || '';
 }
 
 function sendOverride(choice) {

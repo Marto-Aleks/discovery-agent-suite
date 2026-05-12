@@ -91,6 +91,8 @@ async function startPipeline() {
           `Max attempts reached for ${agent.label}. Type "override" to continue anyway or "quit" to stop:`,
           "override"
         ),
+      reviewAgentOutput: ({ agent }) =>
+        waitForInput(`Review ${agent.label} output. Edit if needed, then approve to continue:`, "review-output"),
       onPipelineInit: ({ stages }) => emit("pipeline-init", { stages }),
       onAgentStart: ({ index, agent }) => {
         emit("agent-start", { index, id: agent.id });

@@ -38,10 +38,6 @@ export function createAgent({
   governanceMaxTokens = 1024,
 }) {
   const meta = { id, label, description };
-  const { systemPrompt, governancePrompt } = loadSkill(skillId);
-  const SYSTEM_PROMPT = `${systemPrompt}${loadContext(contextId)}`;
-  const GOVERNANCE_PROMPT = governancePrompt;
-
   async function run(client, messages, context = {}, onChunk = null) {
     const contextBlock = context.summary
       ? `\n\nSession context so far:\n${context.summary}`
@@ -98,5 +94,5 @@ Additional governance requirements:
     return normalizeGovernanceResult(toolUse?.input ?? {}, response.usage);
   }
 
-  return { meta, id, label, description, skillId, contextId, SYSTEM_PROMPT, GOVERNANCE_PROMPT, run, govern };
+  return { meta, id, label, description, skillId, contextId, run, govern };
 }

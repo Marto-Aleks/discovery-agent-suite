@@ -67,7 +67,3 @@ export function formatAnthropicError(error) {
 
   return details.length ? details.join(" | ") : "Unknown error";
 }
-
-export function shouldDisableCondense() {
-  return process.env.DISABLE_CONDENSE === "1";
-}
