@@ -7,11 +7,13 @@ import { readFileSync, writeFileSync, readdirSync } from "fs";
 import { PIPELINE } from "./pipeline/config.js";
 import { runPipeline as executePipeline } from "./pipeline/runner.js";
 import { createAnthropicClient } from "./lib/anthropic-client.js";
-import { saveSession } from "./lib/session-save.js";
+import { saveSession, loadLastSession } from "./lib/session-save.js";
 import { createEvidenceStore } from "./evidence/store.js";
 import { selectEvidenceForAgent, EVIDENCE_TYPE_LABELS } from "./evidence/routing.js";
 import { triageEvidence } from "./evidence/triage.js";
 import { parseUploadedEvidence } from "./evidence/parse.js";
+import { buildJiraPayloads } from "./lib/story-parser.js";
+import { createStory } from "./lib/jira-client.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
@@ -56,11 +58,48 @@ app.post("/input", (req, res) => {
 // ── Pipeline state ─────────────────────────────────────────────────────────────
 let pipelineRunning = false;
 let runLog = [];
+let lastPipelineStages = loadLastSession(); // keyed by agent label — pre-loaded from last saved session
 
 app.post("/reset", (_req, res) => {
   pipelineRunning = false;
   inputQueue = [];
   res.json({ ok: true });
+});
+
+app.post("/push-to-jira", async (_req, res) => {
+  if (!lastPipelineStages["Story Creation"]) {
+    emit("jira-push-complete", { results: [], error: "No stories in memory. Run the pipeline first." });
+    return res.status(400).json({ error: "No stories in memory. Run the pipeline first." });
+  }
+
+  const projectKey = process.env.JIRA_PROJECT_KEY || "BGAPA";
+  const payloads = buildJiraPayloads(
+    lastPipelineStages["Story Creation"],
+    lastPipelineStages["Estimation"],
+    lastPipelineStages["Prioritisation"]
+  );
+
+  if (!payloads.length) {
+    emit("jira-push-complete", { results: [], error: "No stories found in the last pipeline output." });
+    return res.status(400).json({ error: "No stories found in the last pipeline output." });
+  }
+
+  emit("log", { level: "info", text: `Pushing ${payloads.length} stor${payloads.length === 1 ? "y" : "ies"} to Jira (${projectKey})…` });
+
+  const results = [];
+  for (const payload of payloads) {
+    try {
+      const ticket = await createStory({ ...payload, projectKey });
+      results.push({ title: payload.title, key: ticket.key, url: ticket.url, success: true });
+      emit("log", { level: "success", text: `Created ${ticket.key} — ${payload.title}` });
+    } catch (err) {
+      results.push({ title: payload.title, error: err.message, success: false });
+      emit("log", { level: "error", text: `Failed "${payload.title}": ${err.message}` });
+    }
+  }
+
+  emit("jira-push-complete", { results });
+  res.json({ results });
 });
 
 app.post("/start", (_req, res) => {
@@ -131,6 +170,11 @@ async function startPipeline() {
       getAllEvidence: () => evidenceStore.list(),
       getEvidenceForAgent: (agent, session) => selectEvidenceForAgent(agent.id, evidenceStore.list(), session),
     });
+
+    lastPipelineStages = {};
+    for (const entry of result.session.history) {
+      lastPipelineStages[entry.agent] = entry.output;
+    }
 
     const savedPath = saveSession(result.session);
     if (savedPath) {

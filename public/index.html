@@ -1181,6 +1181,7 @@ const S = {
   evidenceMeta: { types: [], stages: [] },
   evidenceTriage: null,
   finalGovernance: null,
+  jiraResults: null,
 };
 
 // ── Utils ──────────────────────────────────────────────────────────────────────
@@ -1371,7 +1372,18 @@ sse.addEventListener('override-request', e => {
 sse.addEventListener('pipeline-complete', e => {
   const { aborted, finalGovernance } = JSON.parse(e.data);
   S.status = 'complete'; S.aborted = aborted; S.input = null; S.finalGovernance = finalGovernance || null;
+  S.jiraResults = null;
   renderSidebar(); renderPanel(); updateAnalytics();
+});
+
+sse.addEventListener('jira-push-complete', e => {
+  const data = JSON.parse(e.data);
+  const btn = document.getElementById('btn-jira');
+  if (btn) { btn.disabled = false; btn.textContent = 'Push to Jira'; }
+  if (data.error) { appendLog('error', `Jira push: ${data.error}`); return; }
+  S.jiraResults = data.results;
+  const el = document.getElementById('jira-results');
+  if (el) { el.innerHTML = ''; el.appendChild(buildJiraResults(S.jiraResults)); }
 });
 
 sse.addEventListener('pipeline-governance', e => {
@@ -1578,6 +1590,7 @@ function renderComplete(panel) {
         ${S.aborted ? 'Session Ended' : 'Pipeline Complete'}
       </div>
       <button class="btn-p" onclick="startPipeline()" style="margin-left:auto">New Pipeline &rarr;</button>
+      ${!S.aborted ? `<button class="btn-g" id="btn-jira" onclick="pushToJira()">Push to Jira</button>` : ''}
     </div>
     <div class="sum-grid">
       <div class="sum-stat">
@@ -1595,6 +1608,12 @@ function renderComplete(panel) {
     </div>
   `;
   panel.appendChild(summary);
+
+  // Jira push results placeholder (populated by jira-push-complete SSE event)
+  const jiraResultsEl = mk('div');
+  jiraResultsEl.id = 'jira-results';
+  if (S.jiraResults) jiraResultsEl.appendChild(buildJiraResults(S.jiraResults));
+  panel.appendChild(jiraResultsEl);
 
   if (S.finalGovernance) {
     const fgWrap = mk('div', 'fu');
@@ -2052,6 +2071,41 @@ function scrollToEvidence() {
   anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+async function pushToJira() {
+  const btn = document.getElementById('btn-jira');
+  if (btn) { btn.disabled = true; btn.textContent = 'Pushing…'; }
+  try {
+    await fetch('/push-to-jira', { method: 'POST' });
+    // Results arrive via jira-push-complete SSE event
+  } catch (err) {
+    appendLog('error', `Jira push failed: ${err.message}`);
+    if (btn) { btn.disabled = false; btn.textContent = 'Push to Jira'; }
+  }
+}
+
+function buildJiraResults(results) {
+  const wrap = mk('div', 'fu');
+  wrap.style.cssText = 'margin-bottom:8px';
+  const succeeded = results.filter(r => r.success);
+  const failed = results.filter(r => !r.success);
+
+  wrap.innerHTML = `
+    <div style="font-size:13px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">
+      Jira — ${succeeded.length} created${failed.length ? `, ${failed.length} failed` : ''}
+    </div>
+    ${results.map(r => `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--${r.success ? 'green' : 'red'}-bg);border:1px solid var(--${r.success ? 'green' : 'red'});border-radius:10px;margin-bottom:8px">
+        <div style="color:var(--${r.success ? 'green' : 'red'});font-weight:600;font-size:13px;white-space:nowrap">
+          ${r.success ? `<a href="${esc(r.url)}" target="_blank" style="color:var(--green);text-decoration:none">${esc(r.key)}</a>` : '✗'}
+        </div>
+        <div style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.title)}</div>
+        ${!r.success ? `<div style="font-size:11px;color:var(--red);margin-top:2px">${esc(r.error)}</div>` : ''}
+      </div>
+    `).join('')}
+  `;
+  return wrap;
+}
+
 async function startPipeline() {
   const topicEl = document.getElementById('start-topic');
   const problem = topicEl?.value.trim() || '';
@@ -2062,7 +2116,7 @@ async function startPipeline() {
 
   const btn = document.getElementById('btn-start');
   if (btn) btn.disabled = true;
-  Object.assign(S, { status:'running', activeIdx:-1, pinned:null, input:null, tokIn:0, tokOut:0, stages:[], sd:[], finalGovernance:null });
+  Object.assign(S, { status:'running', activeIdx:-1, pinned:null, input:null, tokIn:0, tokOut:0, stages:[], sd:[], finalGovernance:null, jiraResults:null });
   document.getElementById('hdr-topic').textContent  = pendingTopic;
   document.getElementById('tok-count').textContent  = '0';
   document.getElementById('log-body').innerHTML     = '';

@@ -10,7 +10,7 @@ The system runs a sequence of specialist stages:
 4. Estimation
 5. Prioritisation
 
-Each stage generates output, runs a governance review, and either passes, retries with feedback, or is manually overridden.
+Each stage generates output, runs a governance review, pauses for editable human approval, and either passes, retries with feedback, or is manually overridden.
 
 ## How It Works
 
@@ -29,8 +29,9 @@ For each stage:
    - the project context from [context/](/Users/alm1sf/discovery-agent-suite/context)
 3. The stage runs against the Anthropic API.
 4. Governance evaluates the output using the stage's governance rules.
-5. If the stage passes, the output is condensed and carried forward as context for the next stage.
-6. If it fails, the governance feedback is fed back into another attempt.
+5. If the stage passes, the dashboard pauses for a human checkpoint where the output can be approved or edited.
+6. Edited checkpoint output is checked again by governance before it is carried forward.
+7. If it fails, the governance feedback is fed back into another attempt.
 
 Governance is now multi-layered:
 
@@ -101,6 +102,8 @@ Shared pipeline orchestration:
 Server-side utilities:
 
 - [session-save.js](/Users/alm1sf/discovery-agent-suite/lib/session-save.js) serialises completed sessions to markdown and saves them to `sessions/`
+- [story-parser.js](/Users/alm1sf/discovery-agent-suite/lib/story-parser.js) parses story, estimate, and prioritisation output into Jira-ready payloads
+- [jira-client.js](/Users/alm1sf/discovery-agent-suite/lib/jira-client.js) creates Track & Release Jira `User Story` issues
 
 ## Runtime Flow Example
 
@@ -119,6 +122,18 @@ The downstream stages now stay linked by shared identifiers:
 - Story Creation assigns stable story IDs such as `ST-1`, `ST-2`
 - Estimation carries those IDs forward when sizing the work
 - Prioritisation ranks the same IDs so decisions map back to the generated stories
+
+## Editable Stage Checkpoints
+
+After a stage passes governance, the dashboard shows an editable review box.
+
+You can:
+
+- approve the generated output as-is
+- make small corrections before the next stage uses it
+- restore the generated version if an edit goes in the wrong direction
+
+If the text is edited, governance runs again against the edited output. The next stage only receives the reviewed version after it passes. This keeps the saved session, downstream context, estimates, prioritisation, and Jira payloads aligned with what the user actually approved.
 
 ## Evidence Ingestion
 
@@ -182,6 +197,38 @@ The session markdown includes a pipeline summary table and, if final governance 
 
 The `sessions/` directory is created automatically on first save.
 
+## Jira / Track & Release Push
+
+The dashboard can push generated stories into Bosch Track & Release Jira after a successful pipeline run.
+
+The integration uses the latest in-memory pipeline result. On server start, it also tries to load the most recent saved session from `sessions/`, so the Jira button can still work after a restart if a completed session exists.
+
+The push flow is:
+
+1. Run the full pipeline through Story Creation, Estimation, and Prioritisation.
+2. Review and approve each stage checkpoint.
+3. On the completion screen, click `Push to Jira`.
+4. The server parses Story Creation output, enriches each story with matching estimation and prioritisation data, and creates Jira `User Story` issues.
+5. The UI shows created issue keys and links, plus any failed items.
+
+Configuration lives in `.env.local`:
+
+```bash
+TR_INSTANCE=tracker19
+TR_PAT=
+TR_API_KEY=
+JIRA_PROJECT_KEY=BGAPA
+```
+
+Notes:
+
+- `TR_INSTANCE` is the path segment in `https://rb-tracker.bosch.com/<instance>/`.
+- `TR_PAT` is your Track & Release personal access token.
+- `TR_API_KEY` is the Bosch API Gateway key for the Track & Release API.
+- `JIRA_PROJECT_KEY` controls where stories are created.
+- Jira calls honor `HTTPS_PROXY` / `HTTP_PROXY`, so Bosch VPN users can run with `HTTPS_PROXY=http://localhost:3128`.
+- API keys and tokens belong only in `.env.local`; they must not be committed.
+
 ## Running Locally
 
 Install dependencies:
@@ -201,6 +248,14 @@ Then edit `.env.local` and add your real key:
 ```bash
 ANTHROPIC_API_KEY=your_api_key
 ```
+
+For Bosch VPN/corporate network usage, also set:
+
+```bash
+HTTPS_PROXY=http://localhost:3128
+```
+
+If you want Jira push support, add the Track & Release settings described above.
 
 After that, local testing is just one command per workflow.
 

@@ -41,6 +41,7 @@ export async function runPipeline(client, pipeline, hooks = {}) {
     let attempt = 0;
     let lastOutput = null;
     let lastGovernance = null;
+    let lastRunUsage = null;
     let advanced = false;
 
     while (attempt < runtime.maxAttempts) {
@@ -97,6 +98,7 @@ export async function runPipeline(client, pipeline, hooks = {}) {
         );
         output = runResult.text;
         runUsage = runResult.usage;
+        lastRunUsage = runUsage;
       } catch (error) {
         hooks.onLog?.({ level: "error", text: `Agent error: ${formatAnthropicError(error)}` });
         if (trimmedInput) conversationHistory.pop();
@@ -247,7 +249,7 @@ export async function runPipeline(client, pipeline, hooks = {}) {
           score: 0,
           passed: false,
           governance: lastGovernance,
-          runUsage,
+          runUsage: lastRunUsage,
         });
         hooks.onAgentCondensed?.({ index, agent, condensed });
         hooks.onAgentComplete?.({ index, agent, score: 0, passed: false, override: true, govUsage: null });
